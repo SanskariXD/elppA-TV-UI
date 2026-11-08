@@ -185,7 +185,7 @@ final class HomeRail extends RecyclerView {
 
     void bind(Object next) {
       item = next;
-      int w = px(media ? 172 : 116), h = px(media ? 97 : 76);
+      int w = px(media ? 172 : 144), h = px(media ? 97 : 86);
       RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(w, h);
       lp.setMargins(px(3), px(5), px(10), px(4));
       frame.setLayoutParams(lp);
@@ -196,7 +196,7 @@ final class HomeRail extends RecyclerView {
       fallback.setVisibility(media ? VISIBLE : GONE);
       image.setLayoutParams(
           new FrameLayout.LayoutParams(
-              w - px(6), media ? h - px(6) : h - px(17), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+              w - px(6), h - px(6), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
       image.setTranslationY(px(3));
       image.setBackground(ElppaUi.shape(Color.TRANSPARENT, px(8), false));
       image.setClipToOutline(true);
@@ -207,7 +207,7 @@ final class HomeRail extends RecyclerView {
       label.setLayoutParams(textLp);
       ElppaUi.type(label, media ? 10 : 10.5f, scale);
       label.setVisibility(frame.hasFocus() ? VISIBLE : INVISIBLE);
-      label.setBackgroundColor(media ? 0xBB090B10 : Color.TRANSPARENT);
+      label.setBackgroundColor(0xDD090B10);
       label.setPadding(px(4), 0, px(4), 0);
       if (next instanceof MediaEntry) {
         MediaEntry e = (MediaEntry) next;
@@ -232,7 +232,13 @@ final class HomeRail extends RecyclerView {
         progress.setVisibility(GONE);
         if (next instanceof AppCatalog.App) {
           AppCatalog.App app = (AppCatalog.App) next;
-          image.setImageDrawable(app.art(getContext().getPackageManager()));
+          android.graphics.drawable.Drawable art = app.art(getContext().getPackageManager());
+          boolean banner = art != null && art.getIntrinsicWidth() > art.getIntrinsicHeight() * 1.3f;
+          image.setScaleType(
+              banner ? ImageView.ScaleType.CENTER_CROP : ImageView.ScaleType.FIT_CENTER);
+          int inset = banner ? 0 : px(16);
+          image.setPadding(inset, inset, inset, inset);
+          image.setImageDrawable(art);
           label.setText(app.label);
           frame.setContentDescription(app.label);
         } else {

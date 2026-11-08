@@ -60,3 +60,7 @@ The owner clarified that catalogue-backed top-rated and relevant recommendations
 ## Verification and featured-feed requirement
 
 See [QA.md](QA.md) for the current test results and the exact cinematic-background selection algorithm. Global top-rated and preferences-based movie recommendations are required by the owner and remain an open Phase 1 acceptance gap; the app-published preview feed does not satisfy that ranking requirement.
+
+## Current hardware test handoff
+
+Version 0.1.1 prepares the Xiaomi Mi Box test session. Follow [MIBOX-TEST.md](MIBOX-TEST.md) and [CODEX-CLI.md](CODEX-CLI.md). Exact box model/firmware and physical acceptance are pending; see the latest entry in [QA.md](QA.md).

@@ -56,8 +56,12 @@ final class AppCatalog {
       if (item.activityInfo == null || !item.activityInfo.exported || !item.activityInfo.enabled)
         continue;
       String pkg = item.activityInfo.packageName;
-      if (pkg.equals(c.getPackageName()) || (!all && hidden.contains(pkg)) || !seen.add(pkg))
-        continue;
+      if (pkg.equals(c.getPackageName())
+          || (!all && hidden.contains(pkg))
+          || (!all
+              && !order.contains(pkg)
+              && (pkg.equals("com.android.tv.settings") || pkg.equals("com.android.settings")))
+          || !seen.add(pkg)) continue;
       result.add(new App(item, pm));
     }
     Collator collator = Collator.getInstance();

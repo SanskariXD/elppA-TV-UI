@@ -217,8 +217,8 @@
       "focusTarget": "D-pad remote; no runtime hover state",
       "scrims": {
         "leftToRightAndroidArgb": [
-          "0xF2090B10",
-          "0x99090B10",
+          "0xE6090B10",
+          "0x66090B10",
           "0x00090B10"
         ],
         "topToBottomAndroidArgb": [
@@ -228,14 +228,14 @@
           "0xFF090B10"
         ]
       },
-      "previewMode": "Opt-in, false by default; Preview · sample content label; sample action opens explanation only",
+      "previewMode": "Opt-in, false by default; Preview \u00b7 sample content label; sample action opens explanation only",
       "specimenLimit": "HTML/CSS are reference-scale translations for the design panel, not app code or native verification. Browser font fallback and hover are panel-only affordances. Native screenshots and physical Sony tests remain pending.",
       "notCanonized": [
         "Literal initial control radii versus scaled focus radii",
         "Literal empty-message padding",
         "Fixed device-pixel stroke requires device review"
       ],
-      "validation": "Debug/release builds, 322 release unit tests and zero-error release lint passed; software emulator supplied no valid native capture; native visual and Sony device acceptance pending"
+      "validation": "0.1.0 automated results are in docs/elppa/QA.md. User supplied an emulator capture; 0.1.1 native recapture and physical Mi Box/Sony acceptance remain pending."
     }
   },
   "components": [
@@ -245,7 +245,7 @@
       "refersTo": "hero-action",
       "description": "Reference-scale specimen of the native explicit action; actual font comes from the bundled Android resource.",
       "html": "<button class=\"ds-control ds-hero-action\">Continue</button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-hero-action{width:155px;height:36px;font-size:14px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
+      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-hero-action{width:192px;height:40px;font-size:14px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
     },
     {
       "name": "Next pick",
@@ -253,7 +253,7 @@
       "refersTo": "next-pick",
       "description": "Manual featured-title change, visible only when more than one recommendation exists.",
       "html": "<button class=\"ds-control ds-next-pick\">Next pick</button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-next-pick{width:112px;height:36px;font-size:13px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
+      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-next-pick{width:112px;height:40px;font-size:13px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
     },
     {
       "name": "Network control",
@@ -269,15 +269,15 @@
       "refersTo": "app-card",
       "description": "Representative app dock tile; the icon uses the shipped vector path and the caption appears on focus.",
       "html": "<button class=\"ds-control ds-app\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"#fff\" d=\"M4,4h4v4H4zM10,4h4v4h-4zM16,4h4v4h-4zM4,10h4v4H4zM10,10h4v4h-4zM16,10h4v4h-4zM4,16h4v4H4zM10,16h4v4h-4zM16,16h4v4h-4z\"/></svg><span>All apps</span></button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-app{position:relative;width:116px;height:76px;border-radius:10px;background:#191d25;padding:0}.ds-app svg{position:absolute;width:41px;height:41px;top:12px;left:37.5px}.ds-app span{position:absolute;bottom:0;left:8px;width:100px;height:19px;font-size:10.5px;text-align:left;visibility:hidden}.ds-app:hover span,.ds-app:focus-visible span{visibility:visible}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
+      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-app{position:relative;width:144px;height:86px;border-radius:10px;background:#191d25;padding:0}.ds-app svg{position:absolute;width:41px;height:41px;top:12px;left:37.5px}.ds-app span{position:absolute;bottom:0;left:8px;width:100px;height:19px;font-size:10.5px;text-align:left;visibility:hidden}.ds-app:hover span,.ds-app:focus-visible span{visibility:visible}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
     },
     {
       "name": "Media fallback tile",
       "kind": "card",
       "refersTo": "media-card",
       "description": "Native no-art fallback specimen; sample label is illustrative and does not imply published history.",
-      "html": "<button class=\"ds-control ds-media\" aria-label=\"Beyond the horizon, Preview, Sample title\"><span class=\"ds-fallback\">Beyond the horizon</span><span class=\"ds-caption\">Beyond the horizon · Preview</span><span class=\"ds-progress\"></span></button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-media{position:relative;width:172px;height:97px;border-radius:10px;background:#191d25;padding:0;white-space:normal}.ds-fallback{position:absolute;left:12px;top:12px;width:148px;height:73px;display:flex;align-items:center;justify-content:center;font-size:13px}.ds-caption{position:absolute;bottom:5px;left:8px;width:148px;height:19px;padding:0 4px;font-size:10px;background:#090b10bb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;visibility:hidden;text-align:left}.ds-media:hover .ds-caption,.ds-media:focus-visible .ds-caption{visibility:visible}.ds-progress{position:absolute;left:6px;bottom:3px;width:56px;height:2px;background:#f4f2ef}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
+      "html": "<button class=\"ds-control ds-media\" aria-label=\"Beyond the horizon, Preview, Sample title\"><span class=\"ds-fallback\">Beyond the horizon</span><span class=\"ds-caption\">Beyond the horizon \u00b7 Preview</span><span class=\"ds-progress\"></span></button>",
+      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-media{position:relative;width:172px;height:97px;border-radius:10px;background:#191d25;padding:0;white-space:normal}.ds-fallback{position:absolute;left:12px;top:12px;width:148px;height:73px;display:flex;align-items:center;justify-content:center;font-size:13px}.ds-caption{position:absolute;bottom:5px;left:8px;width:148px;height:19px;padding:0 4px;font-size:10px;background:#090b10dd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;visibility:hidden;text-align:left}.ds-media:hover .ds-caption,.ds-media:focus-visible .ds-caption{visibility:visible}.ds-progress{position:absolute;left:6px;bottom:3px;width:56px;height:2px;background:#f4f2ef}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
     }
   ],
   "narrative": {

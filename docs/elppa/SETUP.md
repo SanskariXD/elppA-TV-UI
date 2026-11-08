@@ -97,3 +97,5 @@ After testing, disable wireless/network debugging and revoke the computer's auth
 - Interception of firmware-owned voice keys, app passwords, subscriptions or DRM playback.
 
 The launcher only displays provider-shared artwork/metadata and opens installed apps. No analytics, account login, remote control service or background playback service is added.
+
+For the current Xiaomi test setup, follow [MIBOX-TEST.md](MIBOX-TEST.md). For local Codex development, read [CODEX-CLI.md](CODEX-CLI.md).

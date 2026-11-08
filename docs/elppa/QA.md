@@ -44,3 +44,25 @@ Primary references: [Discover movies](https://developer.themoviedb.org/reference
 ## Next native acceptance session
 
 Install as an ordinary app using SETUP.md first. Capture the complete Home at 1080p and 720p, empty/permission/error states, long titles and font scale 1.3. Test every D-pad edge, held Select, dialogs, app hiding/reordering, source exclusion, card dismissal, title launch fallback and returning Home. Then check the real mic, phone remote, Sony settings/input, volume, standby and reboot before accepting a Home replacement.
+
+
+## 0.1.1 — Mi Box preparation and emulator feedback
+
+The user supplied a native emulator screenshot of 0.1.0 showing a large gap between
+single-line title and subtitle, padded app artwork and a duplicate Settings dock tile.
+0.1.1 bottom-aligns the hero title, groups metadata/actions, widens the main action,
+enlarges app cards, fills banner artwork, strengthens caption scrims and omits stock
+Settings from the dock unless pinned. Settings remains reachable; no packages are disabled.
+Preview remains explicit sample content. The catalogue-ranked hero feed is still unimplemented.
+
+Validation: both modules' release unit-test tasks, lint and APK builds passed;
+315 upstream + 11 elppA tests; 5 setup tests passed. Lint: zero errors,
+115 elppA warnings and 96 upstream warnings. Upstream APK remains 587,321 bytes,
+below its existing 589,824-byte gate; elppA APK is 964,541 bytes.
+The full inherited Python suite was not rerun for this UI/docs pass.
+
+No device is connected in this workspace. A fresh 0.1.1 native capture, enlarged-text
+review and physical remote/phone/standby checks remain pending. Xiaomi Mi Box is now
+the first hardware test target; exact model/API/firmware must be probed, not assumed.
+Mi Box testing does not certify Sony settings/inputs or remote compatibility.
+Use [MIBOX-TEST.md](MIBOX-TEST.md) and [CODEX-CLI.md](CODEX-CLI.md).

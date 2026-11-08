@@ -136,7 +136,7 @@ public final class ElppaHomeActivity extends Activity {
     side.setBackground(
         new GradientDrawable(
             GradientDrawable.Orientation.LEFT_RIGHT,
-            new int[] {0xF2090B10, 0x99090B10, 0x00090B10}));
+            new int[] {0xE6090B10, 0x66090B10, 0x00090B10}));
     root.addView(side, new FrameLayout.LayoutParams(-1, -1));
     View bottom = new View(this);
     bottom.setBackground(
@@ -159,6 +159,7 @@ public final class ElppaHomeActivity extends Activity {
     settings = icon(R.drawable.ic_settings, R.string.elppa_settings, this::showSettings);
     title = ElppaUi.text(this, 46);
     title.setMaxLines(2);
+    title.setGravity(Gravity.BOTTOM);
     title.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(title);
     subtitle = ElppaUi.text(this, 14);
@@ -292,6 +293,7 @@ public final class ElppaHomeActivity extends Activity {
     status = ElppaUi.text(this, 10);
     status.setTextColor(ElppaUi.MUTED);
     status.setMaxLines(1);
+    status.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(status);
     root.addOnLayoutChangeListener(
         (v, l, t, r, b, ol, ot, or, ob) -> {
@@ -344,23 +346,23 @@ public final class ElppaHomeActivity extends Activity {
     place(settings, 878, 20, 42, 42);
     for (ImageView v : new ImageView[] {inputs, network, settings})
       v.setPadding(px(10), px(10), px(10), px(10));
-    place(title, 48, largeText ? 82 : 100, 515, largeText ? 140 : 112);
+    place(title, 48, largeText ? 72 : 88, 540, largeText ? 124 : 108);
     ElppaUi.type(title, 46, scale);
     fitText(title, 32, 46);
-    place(subtitle, 50, largeText ? 222 : 216, 500, largeText ? 36 : 28);
+    place(subtitle, 48, 204, 540, 32);
     ElppaUi.type(subtitle, 13, scale);
     fitText(subtitle, 12, 13);
-    place(action, 48, largeText ? 264 : 253, 155, 36);
-    place(next, 216, largeText ? 264 : 253, 112, 36);
+    place(action, 48, 244, 192, 40);
+    place(next, 252, 244, 112, 40);
     ElppaUi.type(action, 14, scale);
     ElppaUi.type(next, 13, scale);
-    place(appsRail, 42, largeText ? 308 : 301, 882, 87);
+    place(appsRail, 42, 292, 882, 96);
     appsRail.scale(scale);
-    place(heading, 48, largeText ? 399 : 394, 850, largeText ? 24 : 20);
+    place(heading, 48, 392, 850, 24);
     ElppaUi.type(heading, 15, scale);
-    place(mediaRail, 42, largeText ? 423 : 416, 882, 106);
+    place(mediaRail, 42, 416, 882, 106);
     mediaRail.scale(scale);
-    place(empty, 48, 426, 864, 77);
+    place(empty, 48, 434, 864, 70);
     ElppaUi.type(empty, 14, scale);
     place(status, 330, 28, 400, 28);
     ElppaUi.type(status, 10, scale);
@@ -559,14 +561,16 @@ public final class ElppaHomeActivity extends Activity {
     selected = entry;
     title.setText(entry.title);
     String detail =
-        sourceName(entry.source) + (entry.subtitle.isEmpty() ? "" : " · " + entry.subtitle);
+        entry.source.equals("demo")
+            ? "Sample artwork · Not available to play"
+            : sourceName(entry.source) + (entry.subtitle.isEmpty() ? "" : " · " + entry.subtitle);
     if (entry.watchType == 1) detail += " · Next episode";
     else if (entry.watchType == 2) detail += " · New";
     else if (entry.watchType == 3) detail += " · Watchlist";
     subtitle.setText(detail);
     action.setText(
         entry.source.equals("demo")
-            ? "Preview"
+            ? "About this preview"
             : entry.hasProgress()
                 ? getString(R.string.elppa_continue)
                 : "Open in " + sourceName(entry.source));

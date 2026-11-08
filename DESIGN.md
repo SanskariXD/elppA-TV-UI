@@ -10,7 +10,7 @@ colors:
   icon-initial: "#292D3544"
   control-rest: "#22262E77"
   control-focus: "#353943CC"
-  media-label: "#090B10BB"
+  media-label: "#090B10DD"
   icon: "#FFFFFF"
   dialog-accent: "#EEECE8"
 typography:
@@ -59,14 +59,14 @@ components:
     backgroundColor: "{colors.control-initial}"
     textColor: "{colors.text}"
     typography: "{typography.action}"
-    width: "155px"
-    height: "36px"
+    width: "192px"
+    height: "40px"
   next-pick:
     backgroundColor: "{colors.control-initial}"
     textColor: "{colors.text}"
     typography: "{typography.body}"
     width: "112px"
-    height: "36px"
+    height: "40px"
   icon-control:
     backgroundColor: "{colors.icon-initial}"
     padding: "{spacing.control-icon-inset}"
@@ -75,8 +75,8 @@ components:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
     rounded: "{rounded.card}"
-    width: "116px"
-    height: "76px"
+    width: "144px"
+    height: "86px"
   media-card:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
@@ -150,20 +150,20 @@ The native `FrameLayout` uses a centred 960×540 landscape canvas. `viewportScal
 | --- | --- | --- |
 | Clock | `(36, 24, 250, 32)` | Height 44 |
 | Inputs / network / settings | x 762 / 820 / 878, y 20; each 42×42 | Unchanged |
-| Hero title | `(48, 100, 515, 112)` | y 82, height 140 |
-| Subtitle | `(50, 216, 500, 28)` | y 222, height 36 |
-| Hero action / Next pick | x 48 / 216, y 253; 155×36 / 112×36 | y 264 |
-| App rail | `(42, 301, 882, 87)` | y 308 |
-| Shelf heading | `(48, 394, 850, 20)` | y 399, height 24 |
-| Media rail | `(42, 416, 882, 106)` | y 423 |
-| Empty-state action | `(48, 426, 864, 77)` | Unchanged |
+| Hero title | `(48, 88, 540, 108)` | y 72, height 124 |
+| Subtitle | `(48, 204, 540, 32)` | Unchanged |
+| Hero action / Next pick | x 48 / 252, y 244; 192×40 / 112×40 | Unchanged |
+| App rail | `(42, 292, 882, 96)` | Unchanged |
+| Shelf heading | `(48, 392, 850, 24)` | Unchanged |
+| Media rail | `(42, 416, 882, 106)` | Unchanged |
+| Empty-state action | `(48, 434, 864, 70)` | Unchanged |
 | Preview/status | `(330, 28, 400, 28)` | Unchanged |
 
-Both rails are horizontal AndroidX `RecyclerView`s. App tiles are compact landscape containers; media tiles are approximately 16:9, with centre-cropped art inset inside the frame. Tile margins are 3 left, 5 top, 10 right and 4 bottom logical units. App art is fitted and padded rather than cropped. Enlarged-text layout moves the lower rails down; fixed tile and caption heights remain a device review point.
+Both rails are horizontal AndroidX `RecyclerView`s. App tiles are compact landscape containers; media tiles are approximately 16:9, with centre-cropped art inset inside the frame. Tile margins are 3 left, 5 top, 10 right and 4 bottom logical units. App banners fill the tile with centre cropping; square icons retain padding. Focus captions use a dark scrim. The hero title is bottom-aligned to keep single-line titles beside their metadata; enlarged text gets more title height without moving the rails. Fixed tile and caption heights remain a device review point.
 
 ## Elevation & Depth
 
-Depth comes from photographic artwork, scrims and focus scale; Home defines no shadow or blur. The left-to-right scrim uses midnight at alpha F2, 99 and 00. The top-to-bottom scrim uses alpha 00, 00, D9 and FF. These are Android `GradientDrawable` colour sequences across the window.
+Depth comes from photographic artwork, scrims and focus scale; Home defines no shadow or blur. The left-to-right scrim uses midnight at alpha E6, 66 and 00. The top-to-bottom scrim uses alpha 00, 00, D9 and FF. These are Android `GradientDrawable` colour sequences across the window.
 
 Focus uses a warm-white **2 device-pixel** stroke, brighter translucent fill and **1.035×** scale. The scale animates over **130 ms** using Android's animator default interpolator; no custom easing is declared. It snaps to the same focus scale when motion is disabled. Cards disable RecyclerView item animations and allow focus enlargement outside their bounds.
 

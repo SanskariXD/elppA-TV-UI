@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## elppA fork: start here
+
+This repository is **SanskariXD/elppA-TV-UI**, maintained independently of CleanYourTV.
+For elppA development and device testing, read [docs/elppa/CODEX-CLI.md](docs/elppa/CODEX-CLI.md)
+and `launcher/elppa/AGENTS.md` first. Work on `main`; do not open upstream PRs or switch
+remotes to Gathin23. Preserve unrelated work and verify the remote before publishing.
+The current test device is a Xiaomi Mi Box (exact model/firmware must be probed);
+the eventual target remains the original Sony KD-50X75. Mi Box results do not certify Sony.
+
+Installing/testing elppA is **not a request to clean or debloat a TV**. Use `tools/elppa.py`;
+do not run the inherited `PROMPT.md` cleanup flow unless the user separately asks for it.
+No packages or system services should be removed/disabled as UI cleanup. Build `:elppa`,
+not `:app`, for the user's APK. The instructions below describe the retained upstream tools.
+
+
 Instructions for coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot and others) working in
 this repository. People should start with [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md);
 this file repeats their rules in the form an agent needs, and links to them for the detail.
