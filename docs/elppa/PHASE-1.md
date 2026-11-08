@@ -55,4 +55,8 @@ Follow [SETUP.md](SETUP.md). First install as an app, record provider counts for
 
 ## Later phases
 
-Only after the X75 baseline: improve ranking based on explicit local preferences, consider a licensed catalogue/availability source for missing recommendations, and decide whether a separate in-launcher search adds value. These are distinct from the stock Assistant and are not shipped as Google's recommendation engine in Phase 1.
+The owner clarified that catalogue-backed top-rated and relevant recommendations belong in Phase 1; see the open requirement below. After that and the X75 baseline, consider richer local feedback and whether a separate in-launcher search adds value. These features remain distinct from the stock Assistant and Google's proprietary recommendation engine.
+
+## Verification and featured-feed requirement
+
+See [QA.md](QA.md) for the current test results and the exact cinematic-background selection algorithm. Global top-rated and preferences-based movie recommendations are required by the owner and remain an open Phase 1 acceptance gap; the app-published preview feed does not satisfy that ranking requirement.

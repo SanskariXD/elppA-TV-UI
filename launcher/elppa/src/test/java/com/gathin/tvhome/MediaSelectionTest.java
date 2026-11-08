@@ -107,4 +107,70 @@ public class MediaSelectionTest {
   public void labelsCannotInjectBidiControlsOrNewlines() {
     assertEquals("Movie   title", MediaEntry.text("Movie\n\u202E title"));
   }
+
+  @Test
+  public void largeFeedsStayBoundedAndWatchNextKeepsTheNewestEntries() {
+    List<MediaEntry> watch = new java.util.ArrayList<>();
+    List<MediaEntry> previews = new java.util.ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      watch.add(item("w" + i, "app." + i, 1, NOW - i, 0, 0, false));
+      previews.add(item("p" + i, "app." + i, -1, 0, 0, 0, true));
+    }
+    Collections.reverse(watch);
+    List<MediaEntry> selected =
+        MediaSelection.watchNext(watch, Collections.emptySet(), Collections.emptySet(), NOW);
+    assertEquals(40, selected.size());
+    assertEquals("w0", selected.get(0).key);
+    assertEquals("w39", selected.get(39).key);
+    assertEquals(
+        30,
+        MediaSelection.recommendations(previews, Collections.emptySet(), Collections.emptySet())
+            .size());
+  }
+
+  @Test
+  public void repeatedProviderRowsCannotFillTheFeaturedCarousel() {
+    MediaEntry first = item("1", "app", -1, 0, 0, 0, true);
+    MediaEntry duplicate = item("2", "app", -1, 0, 0, 0, true);
+    assertEquals(
+        Collections.singletonList(first),
+        MediaSelection.recommendations(
+            Arrays.asList(first, duplicate), Collections.emptySet(), Collections.emptySet()));
+  }
+
+  @Test
+  public void clipsAndMissingArtworkDoNotBecomeFeaturedMovies() {
+    MediaEntry clip =
+        new MediaEntry(
+            "clip",
+            "app",
+            "Clip",
+            "",
+            "https://poster",
+            "https://wide",
+            "app://clip",
+            -1,
+            4,
+            0,
+            0,
+            0,
+            true);
+    MediaEntry noArt =
+        new MediaEntry("noart", "app", "Movie", "", "", "", "app://movie", -1, 0, 0, 0, 0, true);
+    assertTrue(
+        MediaSelection.recommendations(
+                Arrays.asList(clip, noArt), Collections.emptySet(), Collections.emptySet())
+            .isEmpty());
+  }
+
+  @Test
+  public void excludingAllSourcesLeavesNoFeaturedContent() {
+    MediaEntry preview = item("1", "app", -1, 0, 0, 0, true);
+    assertTrue(
+        MediaSelection.recommendations(
+                Collections.singletonList(preview),
+                Collections.singleton("app"),
+                Collections.emptySet())
+            .isEmpty());
+  }
 }
