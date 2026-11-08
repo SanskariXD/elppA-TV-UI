@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-08T19:22:04.209112+00:00",
-  "title": "elppA TV \u2014 borderless cards and catalogue sources 0.4.0",
+  "title": "elppA TV \u2014 glass app dock and combined movie shelf 0.5.0",
   "extensions": {
     "colorMeta": {
       "text": {
@@ -215,7 +215,7 @@
       },
       "viewportScale": "min(width/960, height/540), centred canvas",
       "typeScale": "Logical canvas \u00d7 viewport scale \u00d7 min(fontScale,1.5); hero/subtitle/caption auto-fit.",
-      "focusStroke": "None; native dark elevation shadow, scale and lift. Small corner reflections on resting app cards.",
+      "focusStroke": "Fine directional reflection at rest, small selected-only soft glow, dark native shadow and lift",
       "focusTarget": "D-pad focus and mouse hover",
       "scrims": {
         "leftToRightAndroidArgb": [
@@ -232,12 +232,12 @@
       },
       "previewMode": "Opt-in sample content; no fictional watch history is presented as real.",
       "specimenLimit": "HTML/CSS are reference-scale translations for the design panel, not app code or native verification. Browser font fallback and hover are panel-only affordances. Native screenshots and physical Sony tests remain pending.",
-      "validation": "Automated checks recorded in QA.md; native Mi Box and authenticated OMDb acceptance pending"
+      "validation": "Automated checks recorded in QA.md; native Mi Box appearance and D-pad acceptance pending"
     }
   },
   "components": [],
   "narrative": {
-    "northStar": "Cinematic Home, complete uncropped app banners, dark drop shadows and restrained corner reflections.",
+    "northStar": "Cinematic provider artwork, reflective app cards, translucent frosted play and a combined movie shelf.",
     "overview": "The supplied cinematic Apple-TV-like mockup remains the visual authority: landscape artwork fills the television, a left/bottom scrim carries readable text, and horizontal app and media rails keep the next action close. This is a remote-first native Android TV surface for the Sony KD-50X75, viewed from a sofa.\n\nWarm-white Outfit text, charcoal surfaces and restrained focus feedback let provider artwork supply the colour. Native Android dialogs handle occasional settings and recovery tasks. This document records the implemented source; it does not establish visual acceptance or certify the Sony device.",
     "keyCharacteristics": [
       "Full-bleed still artwork with left and bottom scrims.",

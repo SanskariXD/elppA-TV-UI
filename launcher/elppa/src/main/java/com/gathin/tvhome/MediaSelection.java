@@ -39,6 +39,13 @@ final class MediaSelection {
     return unique(result, 30);
   }
 
+  /** Keep resume/progress records first when the same provider link is also recommended. */
+  static List<MediaEntry> shelf(List<MediaEntry> watching, List<MediaEntry> previews) {
+    List<MediaEntry> combined = new ArrayList<>(watching);
+    combined.addAll(previews);
+    return unique(combined, 70);
+  }
+
   private static boolean usable(MediaEntry e, Set<String> excluded, Set<String> dismissed) {
     return !e.source.isEmpty()
         && !e.title.isEmpty()

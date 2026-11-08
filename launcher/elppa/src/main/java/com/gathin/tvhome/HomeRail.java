@@ -63,6 +63,7 @@ final class HomeRail extends RecyclerView {
       };
   private float scale = 1;
   private int lastPosition;
+  private int pendingPosition = -1;
 
   HomeRail(Context c, boolean media, ArtworkLoader artwork, Events events) {
     super(c);
@@ -114,7 +115,11 @@ final class HomeRail extends RecyclerView {
         break;
       }
     cards.notifyDataSetChanged();
-    if (restore) post(this::focusLast);
+    if (items.isEmpty()) {
+      pendingPosition = -1;
+      setFocusable(false);
+      if (restore) events.vertical(true);
+    } else if (restore) focusLast();
   }
 
   private static String identity(Object item) {
@@ -128,13 +133,89 @@ final class HomeRail extends RecyclerView {
   }
 
   void focusLast() {
+    focusPosition(lastPosition);
+  }
+
+  private void focusPosition(int position) {
     if (items.isEmpty()) return;
-    scrollToPosition(lastPosition);
-    post(
-        () -> {
-          ViewHolder h = findViewHolderForAdapterPosition(lastPosition);
-          if (h != null) h.itemView.requestFocus();
-        });
+    pendingPosition = Math.max(0, Math.min(items.size() - 1, position));
+    lastPosition = pendingPosition;
+    ViewHolder holder = findViewHolderForAdapterPosition(pendingPosition);
+    if (holder != null && holder.itemView.requestFocus()) {
+      pendingPosition = -1;
+      setFocusable(false);
+      return;
+    }
+    // Keep focus inside the rail while the next off-screen card is being attached.
+    setFocusable(true);
+    setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+    requestFocus();
+    setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+    scrollToPosition(pendingPosition);
+    post(this::finishPendingFocus);
+  }
+
+  private void finishPendingFocus() {
+    if (pendingPosition < 0 || !hasFocus()) return;
+    ViewHolder holder = findViewHolderForAdapterPosition(pendingPosition);
+    if (holder != null && holder.itemView.requestFocus()) {
+      pendingPosition = -1;
+      setFocusable(false);
+    }
+  }
+
+  @Override
+  protected void onFocusChanged(boolean gain, int direction, android.graphics.Rect previous) {
+    super.onFocusChanged(gain, direction, previous);
+    if (!gain)
+      post(
+          () -> {
+            if (!hasFocus()) {
+              pendingPosition = -1;
+              setFocusable(false);
+            }
+          });
+  }
+
+  @Override
+  public void onChildAttachedToWindow(View child) {
+    super.onChildAttachedToWindow(child);
+    if (pendingPosition >= 0) post(this::finishPendingFocus);
+  }
+
+  @Override
+  public boolean dispatchKeyEvent(KeyEvent event) {
+    int key = event.getKeyCode();
+    if (hasFocus() && (key == KeyEvent.KEYCODE_DPAD_LEFT || key == KeyEvent.KEYCODE_DPAD_RIGHT)) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN)
+        focusPosition(
+            (pendingPosition >= 0 ? pendingPosition : lastPosition)
+                + (key == KeyEvent.KEYCODE_DPAD_RIGHT ? 1 : -1));
+      return true;
+    }
+    if (hasFocus() && (key == KeyEvent.KEYCODE_DPAD_UP || key == KeyEvent.KEYCODE_DPAD_DOWN)) {
+      if (event.getAction() == KeyEvent.ACTION_DOWN) {
+        int target = pendingPosition >= 0 ? pendingPosition : lastPosition;
+        pendingPosition = -1;
+        events.vertical(key == KeyEvent.KEYCODE_DPAD_UP);
+        if (!hasFocus()) setFocusable(false);
+        else if (getFocusedChild() == null) focusPosition(target);
+      }
+      return true;
+    }
+    return super.dispatchKeyEvent(event);
+  }
+
+  @Override
+  public View focusSearch(View focused, int direction) {
+    View next = super.focusSearch(focused, direction);
+    if (direction == View.FOCUS_LEFT || direction == View.FOCUS_RIGHT) {
+      View parent = next;
+      while (parent != null && parent != this)
+        parent = parent.getParent() instanceof View ? (View) parent.getParent() : null;
+      if (parent != this) return focused;
+    }
+    return next;
   }
 
   private int px(float units) {
@@ -187,7 +268,8 @@ final class HomeRail extends RecyclerView {
       label = ElppaUi.text(c, 11);
       label.setMaxLines(2);
       label.setEllipsize(android.text.TextUtils.TruncateAt.END);
-      label.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+      label.setGravity(Gravity.TOP | Gravity.LEFT);
+      label.setTextColor(0xBFF4F2EF);
       frame.addView(label);
       progress = new View(c);
       progress.setBackgroundColor(ElppaUi.TEXT);
@@ -231,7 +313,9 @@ final class HomeRail extends RecyclerView {
       boolean reduced = events.reducedGlass();
       // Neutral surfaces prevent a brand-coloured frame around the fitted banner.
       card.setBackground(ElppaUi.shape(ElppaUi.SURFACE, px(14), false));
-      card.setForeground(!media && !reduced ? new CardReflection(px(14)) : null);
+      card.setForeground(!media && !reduced ? new CardReflection(px(14), on) : null);
+      frame.setBackground(
+          on && !media && !reduced ? new CardFocusGlow(px(14), 0, 1.045f, -px(3)) : null);
       card.setElevation(px(3));
       card.animate().cancel();
       float zoom = on ? 1.045f : 1f;

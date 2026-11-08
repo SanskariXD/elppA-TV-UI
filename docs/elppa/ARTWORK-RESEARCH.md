@@ -1,3 +1,5 @@
+> Archived research: external catalogue integration was removed in 0.5.0 at the owner’s request.
+
 # Replacement catalogue research — 9 November 2026
 
 The owner could not use TMDB's API setup page and requested OMDb or TVmaze instead.

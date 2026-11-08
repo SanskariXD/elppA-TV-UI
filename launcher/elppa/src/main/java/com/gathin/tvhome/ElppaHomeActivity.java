@@ -46,18 +46,8 @@ public final class ElppaHomeActivity extends Activity {
   private final Handler main = new Handler(Looper.getMainLooper());
   private final ExecutorService dataWorker = Executors.newSingleThreadExecutor();
   private final Map<String, String> sourceNames = new HashMap<>();
-  private final ExecutorService catalogueWorker = Executors.newSingleThreadExecutor();
-  private CatalogueArtwork catalogue;
-  private ArtworkCredentials credentials;
-  private Runnable resolveArtworkSoon;
-  private CancellationSignal artworkSignal;
-  private Future<?> artworkTask;
-  private HomePanel artworkProgress;
-  private String artworkRequestKey = "", catalogueStatus = "Artwork sources are in Settings";
-  private String catalogueEntryKey = "", catalogueDetail = "", catalogueSourceUrl = "";
-  private int artworkGeneration;
+  private String artworkRequestKey = "";
   private android.graphics.Bitmap playFrost;
-  private boolean heroLogoVisible;
   private HomePreferences preferences;
   private ArtworkLoader artwork;
   private TvContentRepository repository;
@@ -68,7 +58,7 @@ public final class ElppaHomeActivity extends Activity {
   private boolean active, observing, initialFocus;
   private boolean loading = true;
   private FrameLayout root;
-  private ImageView backdrop, network, settings, action, titleLogo;
+  private ImageView backdrop, network, settings, action;
   private TextClock clock;
   private TextView title, subtitle, empty, status;
   private HomeRail appsRail, mediaRail;
@@ -121,8 +111,6 @@ public final class ElppaHomeActivity extends Activity {
     preferences = new HomePreferences(this);
     artwork = new ArtworkLoader(this);
     repository = new TvContentRepository(this);
-    catalogue = new CatalogueArtwork(this);
-    credentials = new ArtworkCredentials(this);
     getWindow()
         .setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -179,11 +167,6 @@ public final class ElppaHomeActivity extends Activity {
     title.setGravity(Gravity.BOTTOM);
     title.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(title);
-    titleLogo = new ImageView(this);
-    titleLogo.setScaleType(ImageView.ScaleType.FIT_START);
-    titleLogo.setVisibility(View.GONE);
-    titleLogo.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-    root.addView(titleLogo);
     subtitle = ElppaUi.text(this, 14);
     subtitle.setTextColor(ElppaUi.MUTED);
     subtitle.setMaxLines(2);
@@ -378,7 +361,6 @@ public final class ElppaHomeActivity extends Activity {
     place(title, 48, largeText ? 76 : 94, 450, largeText ? 96 : 78);
     ElppaUi.type(title, 36, scale);
     fitText(title, 26, 36);
-    place(titleLogo, 48, 84, 370, 100);
     place(subtitle, 50, 190, 440, 24);
     ElppaUi.type(subtitle, 12, scale);
     fitText(subtitle, 11, 12);
@@ -469,7 +451,6 @@ public final class ElppaHomeActivity extends Activity {
       observing = false;
     }
     unregisterReceiver(packages);
-    cancelCatalogue();
     artworkRequestKey = "";
     artwork.pause();
     super.onStop();
@@ -478,7 +459,6 @@ public final class ElppaHomeActivity extends Activity {
   @Override
   protected void onDestroy() {
     dataWorker.shutdownNow();
-    catalogueWorker.shutdownNow();
     artwork.close();
     super.onDestroy();
   }
@@ -530,9 +510,10 @@ public final class ElppaHomeActivity extends Activity {
   }
 
   private void render() {
-    List<MediaEntry> watching;
+    List<MediaEntry> watching, previews;
     if (preferences.demo()) {
       watching = PreviewContent.entries(this);
+      previews = new ArrayList<>();
       heroes = new ArrayList<>(watching);
       status.setText(R.string.elppa_preview);
     } else {
@@ -542,19 +523,20 @@ public final class ElppaHomeActivity extends Activity {
               ? new ArrayList<>()
               : MediaSelection.watchNext(
                   snapshot.watch, excluded, dismissed, System.currentTimeMillis());
-      heroes =
+      previews =
           snapshot == null
               ? new ArrayList<>()
               : MediaSelection.recommendations(snapshot.previews, excluded, dismissed);
-      if (heroes.isEmpty()) heroes = new ArrayList<>(watching);
+      heroes = new ArrayList<>(previews.isEmpty() ? watching : previews);
       status.setText(
           snapshot != null && !snapshot.notes.isEmpty()
               ? "Some content is unavailable · See Settings → Content diagnostics"
               : "");
     }
-    mediaRail.submit(watching);
-    mediaRail.setVisibility(watching.isEmpty() ? View.GONE : View.VISIBLE);
-    empty.setVisibility(watching.isEmpty() ? View.VISIBLE : View.GONE);
+    List<MediaEntry> shelf = MediaSelection.shelf(watching, previews);
+    mediaRail.submit(shelf);
+    mediaRail.setVisibility(shelf.isEmpty() ? View.GONE : View.VISIBLE);
+    empty.setVisibility(shelf.isEmpty() ? View.VISIBLE : View.GONE);
     if (!repository.permitted() && !preferences.demo())
       empty.setText(R.string.elppa_access_explanation);
     else if (loading && snapshot == null && !preferences.demo())
@@ -566,14 +548,12 @@ public final class ElppaHomeActivity extends Activity {
     MediaEntry retained = null;
     if (selected != null) for (MediaEntry e : heroes) if (e.key.equals(selected.key)) retained = e;
     if (mediaRail.hasFocus() && selected != null)
-      for (MediaEntry e : watching) if (e.key.equals(selected.key)) retained = e;
+      for (MediaEntry e : shelf) if (e.key.equals(selected.key)) retained = e;
     if (!heroes.isEmpty())
       showHero(retained == null ? heroes.get(Math.floorMod(heroIndex, heroes.size())) : retained);
     else {
       selected = null;
-      cancelCatalogue();
       artworkRequestKey = "";
-      resetLogo();
       playFrost = null;
       stylePlay();
       artwork.clearHero(backdrop);
@@ -591,7 +571,6 @@ public final class ElppaHomeActivity extends Activity {
   private void showHero(MediaEntry entry) {
     selected = entry;
     title.setText(entry.title);
-    title.setVisibility(heroLogoVisible ? View.INVISIBLE : View.VISIBLE);
     subtitle.setText(heroDetail(entry));
     action.setContentDescription(
         entry.source.equals("demo")
@@ -608,8 +587,6 @@ public final class ElppaHomeActivity extends Activity {
     if (entry.watchType == 1) detail += " · Next episode";
     else if (entry.watchType == 2) detail += " · New";
     else if (entry.watchType == 3) detail += " · Watchlist";
-    if (entry.key.equals(catalogueEntryKey) && !catalogueDetail.isEmpty())
-      detail += " · " + catalogueDetail;
     return detail;
   }
 
@@ -619,285 +596,12 @@ public final class ElppaHomeActivity extends Activity {
           new FrostedPlayDrawable(playFrost, action.hasFocus(), preferences.reducedGlass()));
   }
 
-  private void resetLogo() {
-    heroLogoVisible = false;
-    titleLogo.setTag(null);
-    titleLogo.setImageDrawable(null);
-    titleLogo.setVisibility(View.GONE);
-    title.setVisibility(View.VISIBLE);
-  }
-
-  private void cancelCatalogue() {
-    artworkGeneration++;
-    if (resolveArtworkSoon != null) main.removeCallbacks(resolveArtworkSoon);
-    if (artworkSignal != null) artworkSignal.cancel();
-    if (artworkTask != null) artworkTask.cancel(true);
-    if (artworkProgress != null) {
-      HomePanel progress = artworkProgress;
-      artworkProgress = null;
-      progress.dismiss();
-    }
-  }
-
   private void loadHeroArt(MediaEntry entry) {
     if (!active) return;
-    String key =
-        entry.key
-            + "|"
-            + entry.contentType
-            + "|"
-            + entry.title
-            + "|"
-            + entry.backdrop
-            + "|"
-            + entry.poster;
+    String key = entry.key + "|" + entry.backdrop + "|" + entry.poster;
     if (key.equals(artworkRequestKey)) return;
     artworkRequestKey = key;
-    cancelCatalogue();
-    resetLogo();
-    final int ticket = artworkGeneration;
-    catalogueEntryKey = entry.key;
-    catalogueDetail = "";
-    catalogueSourceUrl = "";
-    subtitle.setText(heroDetail(entry));
-    boolean sample = entry.source.equals("demo");
-    if (sample || preferences.providerFallback())
-      artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
-    else {
-      artwork.clearHero(backdrop);
-      playFrost = null;
-      stylePlay();
-    }
-    final boolean showArtwork = preferences.showArtwork();
-    if (sample || (!credentials.configured() && (!showArtwork || entry.contentType != 1))) {
-      catalogueStatus =
-          sample
-              ? "Preview artwork"
-              : "OMDb movie lookup is not connected; app artwork follows your settings";
-      return;
-    }
-    catalogueStatus = "Looking up title details and available show artwork";
-    artworkSignal = new CancellationSignal();
-    final CancellationSignal signal = artworkSignal;
-    final String token = credentials.token();
-    resolveArtworkSoon =
-        () -> {
-          if (!active || ticket != artworkGeneration || signal.isCanceled()) return;
-          artworkTask =
-              catalogueWorker.submit(
-                  () -> {
-                    CatalogueArtwork.Result result;
-                    try {
-                      result = catalogue.resolve(entry, token, showArtwork, signal);
-                    } catch (android.os.OperationCanceledException ignored) {
-                      return;
-                    } catch (RuntimeException ignored) {
-                      result = CatalogueArtwork.Result.empty("Artwork unavailable");
-                    }
-                    final CatalogueArtwork.Result found = result;
-                    main.post(
-                        () -> {
-                          if (!active
-                              || ticket != artworkGeneration
-                              || signal.isCanceled()
-                              || selected == null
-                              || !selected.key.equals(entry.key)) return;
-                          catalogueStatus = found.status;
-                          catalogueDetail = found.detail;
-                          catalogueSourceUrl = found.sourceUrl;
-                          subtitle.setText(heroDetail(selected));
-                          if (!found.backdrop.isEmpty())
-                            artwork.loadCatalogueHero(
-                                backdrop,
-                                found.backdrop,
-                                preferences.providerFallback() ? entry.backdrop : "",
-                                preferences.providerFallback() ? entry.poster : "",
-                                preferences.motion());
-                          else if (preferences.providerFallback())
-                            artwork.loadHero(
-                                backdrop, entry.backdrop, entry.poster, preferences.motion());
-                          if (!found.logo.isEmpty())
-                            artwork.loadLogo(
-                                titleLogo,
-                                found.logo,
-                                () -> {
-                                  if (ticket != artworkGeneration
-                                      || selected == null
-                                      || !selected.key.equals(entry.key)) return;
-                                  heroLogoVisible = true;
-                                  titleLogo.setVisibility(View.VISIBLE);
-                                  title.setVisibility(View.INVISIBLE);
-                                });
-                        });
-                  });
-        };
-    main.postDelayed(resolveArtworkSoon, 180);
-  }
-
-  private void reloadArtwork() {
-    cancelCatalogue();
-    artworkRequestKey = "";
-    resetLogo();
-    if (selected != null) loadHeroArt(selected);
-  }
-
-  private void movieArtworkSettings() {
-    new HomePanel.Builder(this)
-        .setTitle("Movie artwork")
-        .setMessage(
-            "TVmaze supplies available TV-show backgrounds and title artwork. OMDb adds movie"
-                + " details with your API key; it does not provide cinematic backgrounds or title"
-                + " logos. Title names are sent to the enabled service. Coverage varies by title.")
-        .toggle(
-            "TV show artwork",
-            "Look up show backgrounds on TVmaze · No API key needed",
-            preferences.showArtwork(),
-            on -> {
-              preferences.toggle("tvmaze_artwork", on);
-              reloadArtwork();
-            })
-        .row(
-            credentials.configured() ? "Replace OMDb key" : "Connect OMDb",
-            "Movie details · Get a key at omdbapi.com/apikey.aspx",
-            this::enterArtworkToken)
-        .toggle(
-            "Use app backgrounds",
-            "Keep app artwork when catalogue artwork is unavailable; may include badges",
-            preferences.providerFallback(),
-            on -> {
-              preferences.toggle("provider_fallback", on);
-              reloadArtwork();
-            })
-        .row("Artwork and data credits", "OMDb · TVmaze · Streaming apps", this::artworkCredits)
-        .row(
-            "Disconnect OMDb",
-            "Remove the saved movie API key; keep TVmaze show artwork",
-            () -> {
-              credentials.clear();
-              catalogueWorker.execute(catalogue::clear);
-              reloadArtwork();
-            })
-        .setNegativeButton("Done", null)
-        .show();
-  }
-
-  private void enterArtworkToken() {
-    final String[] value = {""};
-    new HomePanel.Builder(this)
-        .setTitle("Connect OMDb")
-        .setMessage(
-            "Get your own API key at omdbapi.com/apikey.aspx and activate it using the email from"
-                + " OMDb. Enter it privately with the TV keyboard or phone remote. It is encrypted"
-                + " on this device. The free key has a daily request limit.")
-        .passwordInput(text -> value[0] = text)
-        .setPositiveButton("Connect", (d, w) -> validateArtworkToken(value[0]))
-        .setNegativeButton("Cancel", null)
-        .show();
-  }
-
-  private void validateArtworkToken(String value) {
-    final String token = ArtworkCredentials.normalise(value);
-    if (!token.matches("[A-Za-z0-9_-]{8,128}")) {
-      message("Check the key", "Enter the activated API key from your OMDb email.");
-      return;
-    }
-    cancelCatalogue();
-    final int ticket = artworkGeneration;
-    artworkSignal = new CancellationSignal();
-    final CancellationSignal signal = artworkSignal;
-    HomePanel progress =
-        new HomePanel.Builder(this)
-            .setTitle("Connecting artwork")
-            .setMessage("Checking your OMDb connection…")
-            .setNegativeButton(
-                "Cancel",
-                (d, w) -> {
-                  cancelCatalogue();
-                  artworkRequestKey = "";
-                })
-            .show();
-    artworkProgress = progress;
-    progress.setOnCancelListener(
-        d -> {
-          cancelCatalogue();
-          artworkRequestKey = "";
-        });
-    artworkTask =
-        catalogueWorker.submit(
-            () -> {
-              String error;
-              try {
-                error = catalogue.validateToken(token, signal);
-              } catch (android.os.OperationCanceledException ignored) {
-                return;
-              } catch (RuntimeException ignored) {
-                error = "Could not connect. Try again.";
-              }
-              final String failure = error;
-              main.post(
-                  () -> {
-                    if (!active || signal.isCanceled() || ticket != artworkGeneration) return;
-                    artworkProgress = null;
-                    progress.dismiss();
-                    if (!failure.isEmpty()) {
-                      message("Artwork connection", failure);
-                      return;
-                    }
-                    if (!credentials.save(token)) {
-                      message(
-                          "Key not saved",
-                          "This device could not store the key securely. Check the key and try"
-                              + " again.");
-                      return;
-                    }
-                    catalogueWorker.execute(catalogue::clear);
-                    reloadArtwork();
-                    movieArtworkSettings();
-                  });
-            });
-  }
-
-  private void artworkCredits() {
-    HomePanel.Builder panel =
-        new HomePanel.Builder(this)
-            .setTitle("Artwork and data credits")
-            .setMessage(
-                "Movie metadata: OMDb, CC BY-NC 4.0. TV-show data and artwork: TVmaze, CC BY-SA."
-                    + " Images retain their owners' rights. Artwork is fitted for display."
-                    + " Availability varies by title; neither service contains every Indian film or"
-                    + " show. Playback and watch history come from your streaming apps.")
-            .row(
-                "OMDb",
-                "omdbapi.com",
-                () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.omdbapi.com/"))))
-            .row(
-                "TVmaze",
-                "tvmaze.com · API and attribution",
-                () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.tvmaze.com/api"))))
-            .row(
-                "OMDb data licence",
-                "Creative Commons Attribution–NonCommercial 4.0",
-                () ->
-                    open(
-                        new Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://creativecommons.org/licenses/by-nc/4.0/"))))
-            .row(
-                "TVmaze data licence",
-                "Creative Commons Attribution–ShareAlike",
-                () ->
-                    open(
-                        new Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://creativecommons.org/licenses/by-sa/4.0/"))));
-    final String source = catalogueSourceUrl;
-    if (source.startsWith("https://www.tvmaze.com/shows/")
-        || source.startsWith("https://www.imdb.com/title/"))
-      panel.row(
-          "Featured title source",
-          "Open the matched title",
-          () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse(source))));
-    panel.setNegativeButton("Done", null).show();
+    artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
   }
 
   private void activateHero() {
@@ -1053,11 +757,6 @@ public final class ElppaHomeActivity extends Activity {
     new HomePanel.Builder(this)
         .setTitle("Settings")
         .section("Home")
-        .row(
-            "Movie artwork",
-            (credentials.configured() ? "OMDb connected" : "OMDb not connected")
-                + (preferences.showArtwork() ? " · Show artwork on" : " · Show artwork off"),
-            this::movieArtworkSettings)
         .toggle(
             "Reduce transparency",
             "Use solid controls and simpler focus lighting",
@@ -1106,11 +805,8 @@ public final class ElppaHomeActivity extends Activity {
             "Clear artwork cache",
             "Download fresh artwork for your titles",
             () -> {
-              cancelCatalogue();
               artworkRequestKey = "";
-              resetLogo();
               artwork.clear();
-              catalogueWorker.execute(catalogue::clear);
               selected = null;
               render();
             })
@@ -1181,7 +877,6 @@ public final class ElppaHomeActivity extends Activity {
             .append("\nTV Remote Service: ")
             .append(packageState("com.google.android.tv.remote.service"));
     text.append("\nArtwork: ").append(artwork.heroQuality());
-    text.append("\nCatalogue: ").append(catalogueStatus);
     if (snapshot != null) {
       text.append("\nChecked: ")
           .append(

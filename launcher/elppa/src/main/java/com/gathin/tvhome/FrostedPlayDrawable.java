@@ -15,10 +15,13 @@ import android.graphics.drawable.Drawable;
 final class FrostedPlayDrawable extends Drawable {
   private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
   private final RectF rect = new RectF();
+  private final RectF edge = new RectF();
   private final Path clip = new Path();
   private final Bitmap frost;
   private final boolean focused, reduced;
-  private Shader sheen;
+  private Shader sheen, edgeLight;
+  private float radius, edgeWidth;
+  private int alpha = 255;
 
   FrostedPlayDrawable(Bitmap frost, boolean focused, boolean reduced) {
     this.frost = frost;
@@ -28,48 +31,80 @@ final class FrostedPlayDrawable extends Drawable {
 
   @Override
   protected void onBoundsChange(android.graphics.Rect bounds) {
+    rect.set(bounds);
+    radius = rect.height() / 2;
+    clip.reset();
+    clip.addRoundRect(rect, radius, radius, Path.Direction.CW);
+    edgeWidth = Math.max(.5f, rect.height() / 52f);
+    edge.set(rect);
+    edge.inset(edgeWidth / 2, edgeWidth / 2);
     sheen =
         new LinearGradient(
             0,
             bounds.top,
             0,
             bounds.bottom,
-            new int[] {focused ? 0x55FFFFFF : 0x38FFFFFF, 0x06FFFFFF, 0x1CFFFFFF},
-            null,
+            new int[] {focused ? 0x30FFF8ED : 0x20FFF8ED, 0x06FFF8ED, 0x10D8CEC0},
+            new float[] {0, .58f, 1},
+            Shader.TileMode.CLAMP);
+    edgeLight =
+        new LinearGradient(
+            bounds.left,
+            bounds.top,
+            bounds.right,
+            bounds.bottom,
+            new int[] {focused ? 0x70EEE5D5 : 0x56EEE5D5, 0x16E2D7C7, 0x30E2D7C7},
+            new float[] {0, .65f, 1},
             Shader.TileMode.CLAMP);
   }
 
   @Override
   public void draw(Canvas canvas) {
-    rect.set(getBounds());
-    float radius = rect.height() / 2;
-    clip.reset();
-    clip.addRoundRect(rect, radius, radius, Path.Direction.CW);
-    canvas.save();
+    int saved = canvas.save();
     canvas.clipPath(clip);
+    paint.setStyle(Paint.Style.FILL);
     paint.setShader(null);
-    paint.setColor(0xFF4B4F55);
-    canvas.drawRect(rect, paint);
-    if (!reduced && frost != null && !frost.isRecycled()) {
-      paint.setAlpha(230);
-      canvas.drawBitmap(frost, null, rect, paint);
-      paint.setColor(focused ? 0x555D6269 : 0x77535860);
+    if (reduced) {
+      // Deliberately opaque only when the user requests reduced transparency.
+      color(focused ? 0xFF69645E : 0xFF544F49);
       canvas.drawRect(rect, paint);
-    }
-    paint.setAlpha(255);
-    if (!reduced) {
+    } else {
+      // No opaque undercoat: both the cached frost and warm neutral tint retain the hero.
+      if (frost != null && !frost.isRecycled()) {
+        color(focused ? 0xAAFFFFFF : 0x96FFFFFF);
+        canvas.drawBitmap(frost, null, rect, paint);
+      }
+      color(focused ? 0x997C7469 : 0x7A746D64);
+      canvas.drawRect(rect, paint);
+      color(0xFFFFFFFF);
       paint.setShader(sheen);
       canvas.drawRect(rect, paint);
+      paint.setShader(edgeLight);
+      paint.setStyle(Paint.Style.STROKE);
+      paint.setStrokeWidth(edgeWidth);
+      canvas.drawRoundRect(edge, radius - edgeWidth / 2, radius - edgeWidth / 2, paint);
       paint.setShader(null);
+      paint.setStyle(Paint.Style.FILL);
     }
-    canvas.restore();
+    canvas.restoreToCount(saved);
+  }
+
+  private void color(int color) {
+    paint.setColor(color);
+    paint.setAlpha((color >>> 24) * alpha / 255);
   }
 
   @Override
-  public void setAlpha(int alpha) {}
+  public void setAlpha(int alpha) {
+    this.alpha = alpha;
+    invalidateSelf();
+  }
 
   @Override
-  public void setColorFilter(ColorFilter filter) {}
+  public void setColorFilter(ColorFilter filter) {
+    paint.setColorFilter(filter);
+    invalidateSelf();
+  }
 
   @Override
   public int getOpacity() {

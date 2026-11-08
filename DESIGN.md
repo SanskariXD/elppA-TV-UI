@@ -26,7 +26,7 @@ rounded:
   panel: "22px"
 ---
 
-# Cinematic Home — 0.4.0
+# Cinematic Home — 0.5.0
 
 The owner's second reference image is the visual authority. Home is an artwork-led,
 remote-operated surface. Native Java and RecyclerView keep rendering bounded on the
@@ -68,16 +68,20 @@ retain 22-unit padding. Non-16:9 artwork may have neutral letterboxing instead o
 cropping. There is no sampled-colour backplate or perimeter stroke. The user's device
 photo exposed how the old 6-unit inset plus sampled colour made an ugly thick frame.
 
-The entire card has a rounded outline and native black elevation shadow (base 3,
-focused translationZ 9 logical units). It lifts 3 units and scales to 1.045 over 200 ms
-with a decelerating curve. FocusGlow is removed. App cards have a small upper-left
-reflection that fades to zero, with a fainter lower-right reflection, even at rest;
-movie artwork receives no decorative gloss. No reflection traces the perimeter.
-D-pad and mouse hover share focus. Reduced motion snaps transforms. Reduce transparency
-removes corner reflections; the focus scale, lift and shadow remain visible.
-The single play button uses a 64×32 crop of the actual backdrop, blurred with two small
-separable box passes on an artwork worker once per hero. A translucent tint and fixed
-sheen finish the surface; no full-screen blur or per-frame sampling is used.
+The entire card has a rounded outline and native black elevation shadow. Focus lifts
+3 units and scales to 1.045 over 200 ms. Resting app cards have visible corner sheen
+and a fine directional reflective edge, fading out rather than forming a uniform white
+border. Only the selected app gets a small soft glow. Reduced transparency disables
+these glass details; focus scale/lift/shadow remain. Reduced motion snaps transforms.
+The play pill uses a cached 64×32 blurred crop of the actual backdrop, a translucent
+warm-grey tint and restrained highlights. Its normal surface has no opaque grey base.
+
+Movie captions are left aligned at 75% warm-white opacity, below the focused image.
+The row combines filtered Watch Next first, then app preview recommendations, with
+source/playback-link duplicates removed and a 70-item cap. Resume progress wins when
+both tables refer to the same target. Preview entries do not invent watch progress.
+Left/Right is explicitly consumed by the row; an offscreen target holds focus inside
+the rail until attached. Up/Down cancels pending horizontal movement before leaving.
 
 Hero images crossfade for 250 ms when motion is enabled. Auto-rotation remains every
 15 seconds only while Home has window focus and the app dock is focused. Dialogs,
@@ -96,42 +100,17 @@ The same panel styles All apps, app actions, source selection, diagnostics and m
 All apps retains long-press management. Source edits are saved explicitly; cancelling
 leaves the prior source selection intact.
 
-## Catalogue artwork, logos and performance
+## Provider artwork and performance
 
-A separate transparent ImageView at x48 y84 (370×100 logical units) displays the real
-movie/show PNG title logo with FIT_START and its original aspect ratio. Plain title text
-remains until an image loads, and returns for missing/ambiguous logos. Logos are not
-redrawn in a lookalike typeface. Watch history, source app and playback URI remain
-from the installed app.
+External catalogue/title-artwork integration is removed for now at the owner's request.
+No TMDB, OMDb or TVmaze lookup or API-key setup runs in 0.5.0. Featured titles use text;
+images come from installed apps' accessible TV-provider rows. Android's thumbnail URI
+is not guaranteed to be a cinematic backdrop; source badges and low resolution can
+remain. Original provider playback links handle opening titles.
 
-Settings → Movie artwork now uses OMDb and TVmaze instead of TMDB. TVmaze show-art
-lookup is enabled by default and can be switched off. OMDb movie metadata requires
-an owner-provided API key, validated over HTTPS and encrypted with Android Keystore.
-The separate credential namespace never sends an old TMDB token to the replacements.
-Movie details can add release year, language and an IMDb score to the provider line;
-this is metadata, not recommendation ranking.
-
-Known TV-series entries use conservative exact title/year matching with TVmaze.
-Unknown types require an OMDb key and a unique identity before show lookup. Ambiguous
-remakes and unidentified episode/season rows are left unresolved. TVmaze backgrounds
-must be landscape and at least 1280×720. Typography must be a suitable PNG with real
-transparent and visible pixels; opaque JPEG title art is rejected. OMDb supplies no
-movie backdrop or separate logo, so portrait posters are never stretched into the hero.
-
-Use app backgrounds is enabled by default, preserving an existing explicit setting.
-It keeps the original app artwork when replacement art is unavailable, including any
-baked-in badges. Switching it off uses a neutral hero with title text if there is no
-suitable catalogue background. The new services cannot guarantee badge-free artwork
-or logos for all Indian movies. Titles are sent only to the corresponding enabled
-source. Credits link to both services, their licences and the matched show page.
-
-Requests wait 180 ms for focus to settle, run on one catalogue worker, cancel on hero
-changes/hidden Home, and use bounded metadata cache/TTL, timeouts and HTTP cooldowns.
-Image loading retains two workers, 24 queued requests, 16 MiB decoded cache, 48 MiB disk
-cache and 8 MiB per response. Hero decode remains at most 1920×1080; frost is 2048 pixels.
-No new dependencies, permissions, background service or continuous animation are added.
-
-See docs/elppa/CATALOGUE-ARTWORK.md and ARTWORK-RESEARCH.md for sources and setup.
+Artwork loading retains two workers, 24 queued requests, 16 MiB decoded cache, 48 MiB disk
+cache and 8 MiB per response. Hero decode is at most 1920×1080; frost is 2048 pixels and
+prepared off the UI thread. No new dependencies, permissions or background services.
 
 ## Evidence and acceptance
 

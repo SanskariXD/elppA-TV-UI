@@ -77,3 +77,10 @@ movie logos are not available from OMDb. See [CATALOGUE-ARTWORK.md](CATALOGUE-AR
 App cards are now 16:9 and edge to edge, without the former inset/coloured frame or glow.
 Dark shadows and restrained resting corner reflections provide depth. Metadata ranking
 and personalised/top-rated recommendations remain a separate open requirement.
+
+## 0.5.0 — provider-only artwork and combined movie shelf
+
+External catalogue/title-artwork integration is removed for now. The second row
+combines Watch Next with app previews, preserving resume records over duplicates.
+App-card materials, translucent play, left-aligned captions and horizontal D-pad
+containment are revised. Real Mi Box appearance/navigation acceptance remains pending.

@@ -173,4 +173,32 @@ public class MediaSelectionTest {
                 Collections.emptySet())
             .isEmpty());
   }
+
+  @Test
+  public void shelfKeepsResumeProgressAndAddsDistinctPreviews() {
+    MediaEntry resume = item("w1", "netflix", 0, NOW, 40, 100, false);
+    MediaEntry sameTitle = item("p1", "netflix", -1, 0, 0, 0, true);
+    MediaEntry recommendation = item("p2", "other", -1, 0, 0, 0, true);
+    List<MediaEntry> result =
+        MediaSelection.shelf(
+            Collections.singletonList(resume), Arrays.asList(sameTitle, recommendation));
+    assertEquals(Arrays.asList(resume, recommendation), result);
+    assertEquals(40, result.get(0).progress());
+    assertTrue(result.get(1).preview);
+  }
+
+  @Test
+  public void shelfStillShowsPreviewsWithoutWatchHistory() {
+    MediaEntry preview = item("p1", "app", -1, 0, 0, 0, true);
+    assertEquals(
+        Collections.singletonList(preview),
+        MediaSelection.shelf(Collections.emptyList(), Collections.singletonList(preview)));
+  }
+
+  @Test
+  public void shelfIsBoundedAcrossBothSources() {
+    List<MediaEntry> previews = new java.util.ArrayList<>();
+    for (int i = 0; i < 100; i++) previews.add(item("p" + i, "app" + i, -1, 0, 0, 0, true));
+    assertEquals(70, MediaSelection.shelf(Collections.emptyList(), previews).size());
+  }
 }

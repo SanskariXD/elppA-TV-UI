@@ -12,17 +12,15 @@ remote main before editing; preserve user changes. No upstream PRs or new branch
 - Final device: original Sony KD-50X75 (2021). Do not assume X75K/Google TV.
 - Visual target: cinematic background, horizontal app dock, horizontal Watch Next shelf.
   Preserve Outfit and clear remote focus; no video, full-screen blur or background polling.
-- 0.4.0 extends the owner's reference: Wi-Fi/Settings only, icon-only play,
-  clean app tiles, movie captions below focus, shadow-led focus, grouped settings
-  side panel, wide 16:9 media, larger uncropped app logos, dark drop shadows, corner reflections, cached
-  frosted play, public TVmaze show artwork and optional OMDb movie metadata. See DESIGN.md.
-- Preview mode is labelled sample content, not actual movies. Never fill the dock with
-  fake installed OTT apps. Native capture of 0.4.0 is still required.
-- **Open Phase 1 requirement:** top-rated + relevant recommended movie hero feed.
-  Current hero uses app preview rows, then Watch Next. TVmaze can enrich show artwork;
-  OMDb supplies movie metadata. Neither integration ranks or chooses recommendations.
-  Implement catalogue ranking separately from app watch history; never commit tokens
-  or invent entitlement.
+- 0.5.0 adds previews after Watch Next in the movie row, left-aligned softer captions,
+  visible app-card reflections, a small selected glow and translucent frosted play.
+  Horizontal navigation stays in its row while offscreen cards attach.
+- External catalogue/title-artwork integration is removed for now. No TMDB, OMDb or
+  TVmaze setup or credential request is part of this version. Use app-published artwork.
+- Preview mode is labelled sample content, not actual movies. Native capture of 0.5.0
+  is still required. Do not fill the app dock with fake installed streaming apps.
+- Top-rated/personal ranking remains an open Phase 1 requirement. App preview ordering
+  is not a ratings sort; never invent subscription entitlement.
 
 ## Windows build
 
@@ -67,25 +65,13 @@ Build success is not visual acceptance. Mi Box success is not Sony acceptance.
 Do not report the catalogue feed, subscriptions or universal Continue Watching as working.
 
 
-## Movie artwork connection (0.4.0)
+## Native acceptance for 0.5.0
 
-TVmaze show artwork is enabled without an API key. It sends known TV-series titles to
-TVmaze, uses exact matching and rejects undersized backgrounds/opaque title-logo art.
-It can be disabled in Settings → Movie artwork → TV show artwork.
+Capture Home at rest, selected app, focused movie and play action. Verify visible
+corner reflections, restrained selected glow, translucent play and left-aligned captions.
+Hold Right across every offscreen app, then Left back; neither direction should enter
+Wi-Fi or Settings. Up should leave the row normally. Test navigation during refresh,
+rapid direction changes and at both row ends. Confirm previews appear when Watch Next
+is empty, and that shared targets retain Watch Next progress without duplicate cards.
 
-For movie details, open Settings → Movie artwork → Connect OMDb. Get the owner's key
-at https://www.omdbapi.com/apikey.aspx and activate it through OMDb's email. Enter it
-privately with the TV keyboard/phone remote; never ask for it in chat, tracked files,
-command arguments or logs. The free tier advertises 1,000 requests/day; successful
-results are cached. OMDb has no cinematic movie backdrop or separate-title-logo API.
-
-Use app backgrounds is on by default and retains existing explicit preferences.
-Turning it off gives a neutral hero when no suitable catalogue artwork exists.
-Provider backgrounds can still contain Top10 badges. OMDb posters are not stretched
-into the hero. Old TMDB credentials are isolated from the OMDb encrypted store.
-
-Capture actual Home with app focus, movie focus and Settings. Check edge-to-edge
-16:9 app banners, neutral padding for nonstandard assets, dark shadow falloff and corner
-reflections on resting cards. Verify rapid selection, Back, offline and correct
-metadata/artwork identity. No native screenshot of 0.4.0 or authenticated OMDb test
-is available from the build workspace. Physical remote/phone tests remain required.
+No connected Mi Box or native screenshot of this revision is available here.

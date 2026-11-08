@@ -27,14 +27,6 @@ final class HomePreferences {
     return store.getBoolean("reduced_glass", false);
   }
 
-  boolean providerFallback() {
-    return store.getBoolean("provider_fallback", true);
-  }
-
-  boolean showArtwork() {
-    return store.getBoolean("tvmaze_artwork", true);
-  }
-
   boolean rotate() {
     return store.getBoolean("rotate", true);
   }

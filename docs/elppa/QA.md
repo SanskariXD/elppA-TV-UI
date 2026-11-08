@@ -169,3 +169,33 @@ not the new appearance. Native shadow falloff, logo fit, rapid D-pad selection,
 network failure behavior, API-key storage and physical remote/phone integration still
 need a Mi Box acceptance pass. No measured hardware-performance or final visual-quality
 claim is made. Mi Box testing does not certify the Sony X75.
+
+## 0.5.0 — combined shelf, glass detail and horizontal focus
+
+The movie row now combines filtered Watch Next first and filtered app previews second.
+Duplicate provider/playback links retain the resume entry and its progress. Three new
+regressions cover duplicate precedence, previews without watch history and the 70-item cap.
+External catalogue, API-key setup, title-logo overlays and related classes/tests are removed
+at the owner's request. App-published image loading, playback and frosted Play remain.
+
+Resting app cards have stronger corner reflections and a fine directional edge. Only the
+selected app gets a small feathered halo, aligned to its final scale/lift, plus the existing
+dark shadow. Play now has a translucent warm-grey surface with no opaque normal undercoat.
+Movie captions are left aligned at 75% warm-white opacity below the focused card.
+
+Left/Right events are explicitly consumed by the row. Offscreen movement acquires focus
+on the rail itself using temporary blocked descendants; pending focus transfers only when
+the target attaches. Rapid keys use the latest target. Vertical departure cancels pending
+movement; a no-op vertical edge restores card selection. Empty rows clear pending state.
+Independent static review found and resolved the focus-anchor and no-op-vertical defects.
+
+Both modules' release unit tests, lint and assembly passed: 315 upstream + 19 elppA = 334 tests,
+zero failures/errors; all 5 setup tests passed. Lint has zero errors, 117 elppA warnings and
+96 upstream warnings. The additional warning is the explicitly left-aligned caption's
+Gravity.LEFT (RTL hardcoding). The full inherited Python suite was not rerun.
+
+No TV is connected in the build workspace. Native glass appearance, opacity and real D-pad
+behavior remain unverified. Required Mi Box pass: hold Right across offscreen cards, reverse
+Left, immediately press Down while a target is attaching, refresh during navigation, test
+both row ends and Up to utilities. Inspect the combined shelf with no watch history and
+check preview links, caption placement, selected glow and reduced transparency/motion.

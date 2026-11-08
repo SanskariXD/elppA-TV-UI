@@ -5,7 +5,7 @@ This is the owner's separately installable cinematic fork of CleanYourTV. The us
 - Native Java and RecyclerView; API 26 minimum. Share upstream helpers/resources through sourceSets; do not modify the reference app for elppA-only behaviour.
 - Follow root PRODUCT.md and DESIGN.md, the user's cinematic mockup, and docs/elppa/PHASE-1.md.
 - Keep Google Assistant, TV Remote Service, Cast, TV providers, Sony settings and input services enabled. No root, accessibility remapper or debloat is part of Phase 1.
-- Watch history and playback targets come only from app-published, accessible content. The owner now authorises OMDb movie metadata and public TVmaze show-artwork enrichment in this module; keep OMDb credentials private and both services’ attribution intact. Demo entries are opt-in and visibly labelled. Never imply universal OTT history, entitlement or Google's personalised recommendation engine.
+- Watch history and playback targets come only from app-published, accessible content. The owner removed external catalogue/title-artwork integration in 0.5.0; do not reintroduce it without a new request. Demo entries are opt-in and visibly labelled. Never imply universal OTT history, entitlement or Google's personalised recommendation engine.
 - Provider queries and artwork decoding stay off the UI thread; cap caches, response sizes and work queues. No video backgrounds or hidden-Home polling.
 - Scope title links to their source package; retain app-launch fallback. No playback-password or subscription handling.
 - From launcher/: run `./gradlew --no-daemon testReleaseUnitTest lintRelease assembleRelease`. Keep the upstream APK below its existing gate. Run affected Python suites for setup/documentation changes.
