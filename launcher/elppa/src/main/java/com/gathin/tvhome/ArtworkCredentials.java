@@ -12,14 +12,14 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 
-/** Owner-provided token, encrypted with a non-exportable Android Keystore key. Never logged. */
+/** Owner-provided OMDb key, encrypted with a non-exportable Android Keystore key. Never logged. */
 final class ArtworkCredentials {
-  private static final String ALIAS = "elppa_movie_artwork";
+  private static final String ALIAS = "elppa_omdb";
   private final SharedPreferences store;
   private String token = "";
 
   ArtworkCredentials(Context context) {
-    store = context.getSharedPreferences("artwork_credentials", Context.MODE_PRIVATE);
+    store = context.getSharedPreferences("omdb_credentials", Context.MODE_PRIVATE);
     try {
       String encrypted = store.getString("encrypted", "");
       String iv = store.getString("iv", "");
@@ -47,12 +47,12 @@ final class ArtworkCredentials {
   }
 
   static String normalise(String value) {
-    return value.trim().replaceFirst("(?i)^Bearer\\s+", "");
+    return value == null ? "" : value.trim();
   }
 
   boolean save(String value) {
     String candidate = normalise(value);
-    if (!candidate.matches("[A-Za-z0-9._~-]{20,4096}")) return false;
+    if (!candidate.matches("[A-Za-z0-9_-]{8,128}")) return false;
     try {
       Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
       cipher.init(Cipher.ENCRYPT_MODE, key());

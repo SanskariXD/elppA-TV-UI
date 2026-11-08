@@ -28,7 +28,11 @@ final class HomePreferences {
   }
 
   boolean providerFallback() {
-    return store.getBoolean("provider_fallback", false);
+    return store.getBoolean("provider_fallback", true);
+  }
+
+  boolean showArtwork() {
+    return store.getBoolean("tvmaze_artwork", true);
   }
 
   boolean rotate() {

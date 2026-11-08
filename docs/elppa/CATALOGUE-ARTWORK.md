@@ -1,72 +1,74 @@
-# Clean catalogue artwork and title logos
+# Artwork sources — 0.4.0
 
-The launcher can enrich an installed app's existing movie/series recommendations with
-TMDB artwork. App-published records still determine the titles and playback links.
-This artwork layer is not Google's recommendation engine, a streaming entitlement
-lookup or a source of watch history.
+The owner requested replacing TMDB with OMDb/TVmaze. This version removes TMDB calls
+and setup. It keeps app-published recommendations, Continue Watching and playback links.
+It does not add a new recommendation ranking engine or infer subscriptions.
 
-## Why a separate source is necessary
+## What each service does
 
-A Netflix Top 10 badge can be part of the bitmap supplied through Android TV listings.
-Scaling or blurring that bitmap cannot recover the clean original. The implementation
-matches a title against TMDB and requests a separate backdrop plus a PNG movie/series
-logo. The catalogue must actually contain them; some titles have no suitable asset.
-A no-language backdrop is a useful metadata filter, not a guarantee that every image
-is free of text, watermarks or badges. The implementation does not erase image content.
+| Source | Used for | Limits |
+| --- | --- | --- |
+| Installed streaming app | Recommendation titles, history, playback URI and fallback image | Images can be small or contain baked-in branding/Top10 badges |
+| OMDb | Exact movie identity and optional year, language and IMDb score | Personal API key; no cinematic backdrop or separate title-logo endpoint |
+| TVmaze | Known TV-series identity, original background images and suitable typography | Public API; excludes theatrical movies; artwork/transparent logos are incomplete |
 
-## Official sources and implementation
+OMDb is the suitable choice of the two for Indian theatrical-movie metadata. Neither
+service guarantees every Indian film/show or title alias. Hindi, Tamil, Telugu,
+Kannada and Malayalam show samples were found in TVmaze; this is not a complete
+coverage study. See [ARTWORK-RESEARCH.md](ARTWORK-RESEARCH.md).
 
-- [Movie images](https://developer.themoviedb.org/reference/movie-images) and
-  [TV series images](https://developer.themoviedb.org/reference/tv-series-images)
-  return poster, backdrop and logo records with language, dimensions, rating and path.
-- [Image languages](https://developer.themoviedb.org/docs/image-languages) documents
-  combining a requested language with English and language-neutral images.
-- [Image basics](https://developer.themoviedb.org/docs/image-basics) and
-  [configuration](https://developer.themoviedb.org/reference/configuration-details)
-  supply the image host and available sizes. The resolver uses only advertised sizes.
-  Hero assets normally use the widest bounded width (currently w1280); a 1920–3840 px
-  source no taller than 2160 px may use the advertised original size so the loader can
-  retain 1080p detail. The existing loader still caps response size and decoded pixels.
-  PNG logos use an advertised bounded width; unsupported vector logo paths are skipped.
-- [Application authentication](https://developer.themoviedb.org/docs/authentication-application)
-  requires the user's API Read Access Token in the Authorization header. An empty token
-  makes no network requests. The setup path validates through a fresh configuration
-  request; tokens are not embedded in source, metadata caches, URLs or diagnostics.
-- [Movie search](https://developer.themoviedb.org/reference/search-movie) and
-  [TV search](https://developer.themoviedb.org/reference/search-tv) supply candidates.
-  The resolver compares exact normalised returned/original titles and accepts only one
-  identity. A trailing bracketed year can disambiguate. It never picks the most popular
-  ambiguous result or transliterates a title to guess a match. Unknown provider types
-  require a unique result across both movie and TV searches. Seasons/episodes fall back
-  because the current MediaEntry does not contain a verified owning-series ID.
+## Setup
 
-The resolver reads at most three pages per applicable search namespace. If the result
-set is larger, it declines enrichment rather than claiming uniqueness from a partial
-search. Search/configuration/image JSON responses are capped at 2 MiB; requests use
-4 s connect and 5 s read timeouts, HTTPS and no redirects. Cancellation disconnects the
-active request. The caller owns a bounded worker and must cancel on replacement/pause.
+- TVmaze show artwork is on by default and needs no key. Disable **TV show artwork**
+  under Settings → Movie artwork to stop show lookups.
+- For movie metadata, get a personal key at https://www.omdbapi.com/apikey.aspx.
+  Activate it through OMDb's email, then enter it privately under **Connect OMDb**.
+  The free key advertises 1,000 requests/day; artwork selection does not bypass that.
+- API keys are validated online, encrypted using a non-exportable Android Keystore
+  key, and never logged. A separate `omdb_credentials` store and `elppa_omdb` alias
+  prevent an old TMDB token from being sent to a replacement service.
+- **Use app backgrounds** defaults to on and honours a previously explicit choice.
+  Turning it off produces a neutral background if no suitable catalogue image exists.
+  Leaving it on can retain Netflix/provider badges. OMDb cannot remove those badges
+  or replace movie backgrounds with equivalent artwork.
 
-Resolved metadata is cached for seven days; missing/ambiguous results for one day.
-The cache has at most 256 small records, each read capped at 8 KiB. HTTP authentication
-and rate-limit failures use a brief cooldown and are never saved as permanent misses.
-Clear removes metadata and configuration, and prevents an older in-flight result from
-writing back after the clear. Cache files never contain the read token or search title.
+## Identity and rendering
 
-## Attribution and coverage
+Exact normalized title/type matching uses an explicit year only when the provider
+includes it. Ambiguous remakes fail closed. Unknown types require OMDb identity before
+TVmaze show lookup; episodes and seasons are skipped without an owning-series identity.
+No fuzzy first-result selection, poster stretching, invented title logo or guessed
+high-resolution CDN URL is used.
 
-[TMDB's FAQ](https://developer.themoviedb.org/docs/faq) requires an approved TMDB logo
-and the following notice in an About/Credits section:
+TVmaze `background` images must be at least 1280×720, landscape, and inside bounded
+source dimensions. `typography` candidates must be PNGs; decoded pixels must contain
+both real transparency and visible content before replacing the plain title. The
+artwork can be copyrighted or contain words even when classified as a background.
+A missing or rejected logo keeps readable title text.
 
-> This product uses the TMDB API but is not endorsed or certified by TMDB.
+Catalogue image download/decode failure falls back to app images only when allowed.
+A larger app thumbnail never takes priority over a successfully loaded catalogue
+background. Credits include source links and licences. The matched TVmaze show page
+can be opened from Artwork and data credits.
 
-Use the [approved logos](https://www.themoviedb.org/about/logos-attribution) without
-redrawing them. The developer API permits noncommercial use with attribution; commercial
-use has separate terms. The UI must explain that enabling catalogue artwork sends the
-selected movie/show title to TMDB.
+## Work bounds and failure behavior
 
-A successful match can provide a backdrop with no logo, or a logo with no acceptable
-backdrop. Keep each layer's fallback independent. Without credentials, catalogue coverage,
-an unambiguous title identity or a suitable asset, do not claim clean HD artwork or logos
-for every recommendation. The current API has not been live-tested with a real read token
-in this workspace. Unit tests cover the conservative identity matching policy; authenticated
-movie/TV/image responses and device rendering remain integration checks.
+- 180 ms focus debounce; one catalogue worker; cancellation on selection change/hidden Home.
+- HTTPS only, fixed API hosts, bounded redirects for TVmaze identity lookup; no OMDb key
+  in image URLs, disk cache files, logs or user-facing errors.
+- 2 MiB JSON response bound, 4-second connection and 5-second read timeouts.
+- Bounded search pagination; incomplete/ambiguous results do not become matches.
+- 256 metadata entries; successful metadata/artwork cached 7 days, absent matches 1 day.
+- Rate/auth errors produce safe messages and source-specific cooldowns.
+- Image pipeline remains bounded: two workers, 24 queued requests, 16 MiB decoded and 48 MiB
+  disk cache, at most 1920×1080 hero decode. No new app dependency or background service.
+
+The workspace has no OMDb key or connected Mi Box. Public TVmaze responses were
+checked; Android runtime/API-key persistence, final native appearance and physical
+remote behavior remain device acceptance checks. Source tests do not establish those.
+
+## Attribution
+
+OMDb: https://www.omdbapi.com/ — CC BY-NC 4.0.
+TVmaze: https://www.tvmaze.com/api — CC BY-SA 4.0.
+Artwork retains its owners' rights; images are fitted for display and not bundled.

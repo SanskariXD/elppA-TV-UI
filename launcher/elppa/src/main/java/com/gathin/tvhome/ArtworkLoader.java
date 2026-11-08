@@ -70,6 +70,25 @@ final class ArtworkLoader {
     heroListener = listener;
   }
 
+  /** Typography uploads may be opaque posters. Only real cut-out artwork can replace the title. */
+  private static boolean transparentLogo(Bitmap bitmap) {
+    if (!bitmap.hasAlpha()) return false;
+    int clear = 0,
+        visible = 0,
+        threshold = Math.max(4, bitmap.getWidth() * bitmap.getHeight() / 100);
+    int[] row = new int[bitmap.getWidth()];
+    for (int y = 0; y < bitmap.getHeight(); y++) {
+      bitmap.getPixels(row, 0, row.length, 0, y, row.length, 1);
+      for (int pixel : row) {
+        int alpha = pixel >>> 24;
+        if (alpha < 32) clear++;
+        else if (alpha > 192) visible++;
+      }
+      if (clear > threshold && visible > threshold) return true;
+    }
+    return false;
+  }
+
   void loadLogo(ImageView target, String uri, Runnable ready) {
     target.setTag(uri);
     target.setImageDrawable(null);
@@ -81,6 +100,7 @@ final class ArtworkLoader {
           String key = "logo:" + uri;
           Bitmap result = memory.get(key);
           if (result == null) result = read(uri, 800, 320);
+          if (result != null && !transparentLogo(result)) result = null;
           if (ticket != generation.get()) return;
           if (result != null) memory.put(key, result);
           final Bitmap bitmap = result;
@@ -113,7 +133,17 @@ final class ArtworkLoader {
   }
 
   void loadHero(ImageView target, String thumbnail, String poster, boolean motion) {
-    final String key = "hero-v2:" + thumbnail + "|" + poster;
+    loadHero(target, thumbnail, poster, motion, "");
+  }
+
+  void loadCatalogueHero(
+      ImageView target, String preferred, String thumbnail, String poster, boolean motion) {
+    loadHero(target, thumbnail, poster, motion, preferred);
+  }
+
+  private void loadHero(
+      ImageView target, String thumbnail, String poster, boolean motion, String preferred) {
+    final String key = "hero-v3:" + preferred + "|" + thumbnail + "|" + poster;
     if (key.equals(displayedHeroKey) && target.getDrawable() != null) {
       target.setTag(key);
       if (heroListener != null) heroListener.ready(currentFrost);
@@ -126,27 +156,34 @@ final class ArtworkLoader {
     workers.execute(
         () -> {
           if (ticket != generation.get()) return;
-          String best = thumbnail;
-          int[] chosen = dimensions(thumbnail);
-          if (!poster.equals(thumbnail)) {
-            int[] alternative = dimensions(poster);
-            if (ArtworkSizing.heroScore(alternative[0], alternative[1])
-                > ArtworkSizing.heroScore(chosen[0], chosen[1])) {
-              best = poster;
-              chosen = alternative;
-            }
-          }
-          Bitmap bitmap = memory.get("hero:" + best);
+          String best = preferred;
+          int[] chosen = preferred.isEmpty() ? new int[] {0, 0} : dimensions(preferred);
+          Bitmap bitmap = preferred.isEmpty() ? null : memory.get("hero:" + preferred);
+          if (bitmap == null && chosen[0] > 0) bitmap = read(preferred, 1920, 1080);
+          boolean catalogueLoaded = bitmap != null;
           if (bitmap == null) {
-            bitmap = read(best, 1920, 1080);
+            // App candidates are considered only after the preferred catalogue image fails.
+            best = thumbnail;
+            chosen = dimensions(thumbnail);
+            if (!poster.equals(thumbnail)) {
+              int[] alternative = dimensions(poster);
+              if (ArtworkSizing.heroScore(alternative[0], alternative[1])
+                  > ArtworkSizing.heroScore(chosen[0], chosen[1])) {
+                best = poster;
+                chosen = alternative;
+              }
+            }
+            bitmap = memory.get("hero:" + best);
+            if (bitmap == null) bitmap = read(best, 1920, 1080);
             if (bitmap == null) {
               best = best.equals(thumbnail) ? poster : thumbnail;
               chosen = dimensions(best);
-              bitmap = read(best, 1920, 1080);
+              bitmap = memory.get("hero:" + best);
+              if (bitmap == null) bitmap = read(best, 1920, 1080);
             }
-            if (ticket != generation.get()) return;
-            if (bitmap != null) memory.put("hero:" + best, bitmap);
           }
+          if (ticket != generation.get()) return;
+          if (bitmap != null) memory.put("hero:" + best, bitmap);
           final Bitmap result = bitmap;
           final Bitmap frost = FrostedPlayDrawable.sample(bitmap, canvasWidth, canvasHeight);
           final String quality =
@@ -160,9 +197,10 @@ final class ArtworkLoader {
                       + bitmap.getWidth()
                       + " × "
                       + bitmap.getHeight()
-                      + (chosen[0] < 1280 || chosen[1] < 720
-                          ? " · App supplied a small image"
-                          : "");
+                      + (chosen[0] < 1280 || chosen[1] < 720 ? " · Small source image" : "")
+                      + (preferred.isEmpty()
+                          ? ""
+                          : catalogueLoaded ? " · Catalogue" : " · App fallback");
           main.post(
               () -> {
                 if (ticket != generation.get() || !key.equals(target.getTag())) return;

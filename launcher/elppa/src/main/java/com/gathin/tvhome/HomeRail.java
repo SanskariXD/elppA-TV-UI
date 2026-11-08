@@ -149,7 +149,6 @@ final class HomeRail extends RecyclerView {
     final TextView fallback;
     final View progress;
     Object item;
-    int surface = ElppaUi.SURFACE;
 
     Tile(Context c) {
       super(new FrameLayout(c));
@@ -162,6 +161,19 @@ final class HomeRail extends RecyclerView {
       card = new FrameLayout(c);
       card.setClipChildren(false);
       card.setClipToPadding(false);
+      card.setClipToOutline(true);
+      card.setOutlineProvider(
+          new android.view.ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, android.graphics.Outline outline) {
+              outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), px(14));
+              outline.setAlpha(.55f);
+            }
+          });
+      if (android.os.Build.VERSION.SDK_INT >= 28) {
+        card.setOutlineAmbientShadowColor(Color.BLACK);
+        card.setOutlineSpotShadowColor(Color.BLACK);
+      }
       frame.addView(card);
       fallback = ElppaUi.text(c, 13);
       fallback.setMaxLines(3);
@@ -217,19 +229,20 @@ final class HomeRail extends RecyclerView {
 
     private void focusCard(boolean on) {
       boolean reduced = events.reducedGlass();
-      card.setBackground(
-          reduced
-              ? ElppaUi.shape(on ? 0xFF515963 : surface, px(14), false)
-              : new FocusGlow(px(14), scale, on, surface));
-      card.setForeground(on && !reduced ? new CardReflection(px(14)) : null);
+      // Neutral surfaces prevent a brand-coloured frame around the fitted banner.
+      card.setBackground(ElppaUi.shape(ElppaUi.SURFACE, px(14), false));
+      card.setForeground(!media && !reduced ? new CardReflection(px(14)) : null);
+      card.setElevation(px(3));
       card.animate().cancel();
       float zoom = on ? 1.045f : 1f;
       float lift = on ? -px(3) : 0;
+      float depth = on ? px(9) : 0;
       if (events.motion() && android.animation.ValueAnimator.areAnimatorsEnabled())
         card.animate()
             .scaleX(zoom)
             .scaleY(zoom)
             .translationY(lift)
+            .translationZ(depth)
             .setDuration(200)
             .setInterpolator(new android.view.animation.DecelerateInterpolator())
             .start();
@@ -237,50 +250,18 @@ final class HomeRail extends RecyclerView {
         card.setScaleX(zoom);
         card.setScaleY(zoom);
         card.setTranslationY(lift);
-      }
-    }
-
-    private int bannerSurface(android.graphics.drawable.Drawable drawable) {
-      if (drawable == null) return ElppaUi.SURFACE;
-      android.graphics.Bitmap sample = null;
-      android.graphics.Rect original = new android.graphics.Rect(drawable.getBounds());
-      try {
-        sample =
-            android.graphics.Bitmap.createBitmap(16, 16, android.graphics.Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(sample);
-        drawable.setBounds(0, 0, 16, 16);
-        drawable.draw(canvas);
-        int[] corners = {
-          sample.getPixel(1, 1),
-          sample.getPixel(14, 1),
-          sample.getPixel(1, 14),
-          sample.getPixel(14, 14)
-        };
-        int red = 0, green = 0, blue = 0;
-        for (int colour : corners) {
-          if (Color.alpha(colour) < 240) return ElppaUi.SURFACE;
-          red += Color.red(colour);
-          green += Color.green(colour);
-          blue += Color.blue(colour);
-        }
-        return Color.rgb(red / 4, green / 4, blue / 4);
-      } catch (RuntimeException ignored) {
-        return ElppaUi.SURFACE;
-      } finally {
-        drawable.setBounds(original);
-        if (sample != null) sample.recycle();
+        card.setTranslationZ(depth);
       }
     }
 
     void bind(Object next) {
       item = next;
-      int w = px(media ? 176 : 152), h = px(media ? 99 : 92);
+      int w = px(media ? 176 : 160), h = px(media ? 99 : 90);
       RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(w, h + px(media ? 38 : 0));
       lp.setMargins(px(8), px(12), px(8), px(8));
       frame.setLayoutParams(lp);
       frame.setBackgroundColor(Color.TRANSPARENT);
       card.setLayoutParams(new FrameLayout.LayoutParams(w, h));
-      surface = ElppaUi.SURFACE;
       fallback.setLayoutParams(
           new FrameLayout.LayoutParams(w - px(24), h - px(24), Gravity.CENTER));
       ElppaUi.type(fallback, 13, scale);
@@ -324,15 +305,15 @@ final class HomeRail extends RecyclerView {
       } else {
         image.setTag(null);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        image.setPadding(px(9), px(9), px(9), px(9));
+        image.setPadding(px(22), px(22), px(22), px(22));
         progress.setVisibility(GONE);
         if (next instanceof AppCatalog.App) {
           AppCatalog.App app = (AppCatalog.App) next;
           android.graphics.drawable.Drawable art = app.art(getContext().getPackageManager());
           boolean banner = art != null && art.getIntrinsicWidth() > art.getIntrinsicHeight() * 1.3f;
           image.setScaleType(ImageView.ScaleType.FIT_CENTER);
-          surface = banner ? bannerSurface(art) : ElppaUi.SURFACE;
-          int inset = banner ? px(6) : px(22);
+          // TV banners normally match16:9. Preserve every logo pixel without a synthetic inset.
+          int inset = banner ? 0 : px(22);
           image.setPadding(inset, inset, inset, inset);
           image.setImageDrawable(art);
           label.setText(app.label);

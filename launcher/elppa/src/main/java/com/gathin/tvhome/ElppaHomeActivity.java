@@ -53,7 +53,8 @@ public final class ElppaHomeActivity extends Activity {
   private CancellationSignal artworkSignal;
   private Future<?> artworkTask;
   private HomePanel artworkProgress;
-  private String artworkRequestKey = "", catalogueStatus = "Connect movie artwork in Settings";
+  private String artworkRequestKey = "", catalogueStatus = "Artwork sources are in Settings";
+  private String catalogueEntryKey = "", catalogueDetail = "", catalogueSourceUrl = "";
   private int artworkGeneration;
   private android.graphics.Bitmap playFrost;
   private boolean heroLogoVisible;
@@ -591,6 +592,15 @@ public final class ElppaHomeActivity extends Activity {
     selected = entry;
     title.setText(entry.title);
     title.setVisibility(heroLogoVisible ? View.INVISIBLE : View.VISIBLE);
+    subtitle.setText(heroDetail(entry));
+    action.setContentDescription(
+        entry.source.equals("demo")
+            ? "About this preview"
+            : "Play " + entry.title + " in " + sourceName(entry.source));
+    loadHeroArt(entry);
+  }
+
+  private String heroDetail(MediaEntry entry) {
     String detail =
         entry.source.equals("demo")
             ? "Sample artwork · Not available to play"
@@ -598,12 +608,9 @@ public final class ElppaHomeActivity extends Activity {
     if (entry.watchType == 1) detail += " · Next episode";
     else if (entry.watchType == 2) detail += " · New";
     else if (entry.watchType == 3) detail += " · Watchlist";
-    subtitle.setText(detail);
-    action.setContentDescription(
-        entry.source.equals("demo")
-            ? "About this preview"
-            : "Play " + entry.title + " in " + sourceName(entry.source));
-    loadHeroArt(entry);
+    if (entry.key.equals(catalogueEntryKey) && !catalogueDetail.isEmpty())
+      detail += " · " + catalogueDetail;
+    return detail;
   }
 
   private void stylePlay() {
@@ -634,25 +641,42 @@ public final class ElppaHomeActivity extends Activity {
 
   private void loadHeroArt(MediaEntry entry) {
     if (!active) return;
-    String key = entry.key + "|" + entry.title + "|" + entry.backdrop + "|" + entry.poster;
+    String key =
+        entry.key
+            + "|"
+            + entry.contentType
+            + "|"
+            + entry.title
+            + "|"
+            + entry.backdrop
+            + "|"
+            + entry.poster;
     if (key.equals(artworkRequestKey)) return;
     artworkRequestKey = key;
     cancelCatalogue();
     resetLogo();
     final int ticket = artworkGeneration;
-    if (entry.source.equals("demo") || !credentials.configured()) {
-      catalogueStatus =
-          entry.source.equals("demo")
-              ? "Preview artwork"
-              : "Not connected — provider artwork is shown";
+    catalogueEntryKey = entry.key;
+    catalogueDetail = "";
+    catalogueSourceUrl = "";
+    subtitle.setText(heroDetail(entry));
+    boolean sample = entry.source.equals("demo");
+    if (sample || preferences.providerFallback())
       artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
+    else {
+      artwork.clearHero(backdrop);
+      playFrost = null;
+      stylePlay();
+    }
+    final boolean showArtwork = preferences.showArtwork();
+    if (sample || (!credentials.configured() && (!showArtwork || entry.contentType != 1))) {
+      catalogueStatus =
+          sample
+              ? "Preview artwork"
+              : "OMDb movie lookup is not connected; app artwork follows your settings";
       return;
     }
-    // Do not show the preceding title or its branded provider art during catalogue matching.
-    artwork.clearHero(backdrop);
-    playFrost = null;
-    stylePlay();
-    catalogueStatus = "Finding movie artwork";
+    catalogueStatus = "Looking up title details and available show artwork";
     artworkSignal = new CancellationSignal();
     final CancellationSignal signal = artworkSignal;
     final String token = credentials.token();
@@ -664,7 +688,7 @@ public final class ElppaHomeActivity extends Activity {
                   () -> {
                     CatalogueArtwork.Result result;
                     try {
-                      result = catalogue.resolve(entry, token, signal);
+                      result = catalogue.resolve(entry, token, showArtwork, signal);
                     } catch (android.os.OperationCanceledException ignored) {
                       return;
                     } catch (RuntimeException ignored) {
@@ -679,9 +703,16 @@ public final class ElppaHomeActivity extends Activity {
                               || selected == null
                               || !selected.key.equals(entry.key)) return;
                           catalogueStatus = found.status;
+                          catalogueDetail = found.detail;
+                          catalogueSourceUrl = found.sourceUrl;
+                          subtitle.setText(heroDetail(selected));
                           if (!found.backdrop.isEmpty())
-                            artwork.loadHero(
-                                backdrop, found.backdrop, found.backdrop, preferences.motion());
+                            artwork.loadCatalogueHero(
+                                backdrop,
+                                found.backdrop,
+                                preferences.providerFallback() ? entry.backdrop : "",
+                                preferences.providerFallback() ? entry.poster : "",
+                                preferences.motion());
                           else if (preferences.providerFallback())
                             artwork.loadHero(
                                 backdrop, entry.backdrop, entry.poster, preferences.motion());
@@ -714,27 +745,33 @@ public final class ElppaHomeActivity extends Activity {
     new HomePanel.Builder(this)
         .setTitle("Movie artwork")
         .setMessage(
-            credentials.configured()
-                ? "TMDB is connected. Matching titles can use clean backdrops and original title"
-                    + " logos."
-                : "Connect TMDB to get clean movie backdrops and original title logos. The launcher"
-                    + " sends title names to TMDB when resolving artwork.")
+            "TVmaze supplies available TV-show backgrounds and title artwork. OMDb adds movie"
+                + " details with your API key; it does not provide cinematic backgrounds or title"
+                + " logos. Title names are sent to the enabled service. Coverage varies by title.")
+        .toggle(
+            "TV show artwork",
+            "Look up show backgrounds on TVmaze · No API key needed",
+            preferences.showArtwork(),
+            on -> {
+              preferences.toggle("tvmaze_artwork", on);
+              reloadArtwork();
+            })
         .row(
-            credentials.configured() ? "Replace access token" : "Connect TMDB",
-            "Use your own API Read Access Token",
+            credentials.configured() ? "Replace OMDb key" : "Connect OMDb",
+            "Movie details · Get a key at omdbapi.com/apikey.aspx",
             this::enterArtworkToken)
         .toggle(
-            "Allow app artwork as fallback",
-            "May include provider badges or lower-resolution images",
+            "Use app backgrounds",
+            "Keep app artwork when catalogue artwork is unavailable; may include badges",
             preferences.providerFallback(),
             on -> {
               preferences.toggle("provider_fallback", on);
               reloadArtwork();
             })
-        .row("Artwork credits", "The Movie Database", this::artworkCredits)
+        .row("Artwork and data credits", "OMDb · TVmaze · Streaming apps", this::artworkCredits)
         .row(
-            "Disconnect TMDB",
-            "Return to artwork supplied by your apps",
+            "Disconnect OMDb",
+            "Remove the saved movie API key; keep TVmaze show artwork",
             () -> {
               credentials.clear();
               catalogueWorker.execute(catalogue::clear);
@@ -747,11 +784,11 @@ public final class ElppaHomeActivity extends Activity {
   private void enterArtworkToken() {
     final String[] value = {""};
     new HomePanel.Builder(this)
-        .setTitle("Connect TMDB")
+        .setTitle("Connect OMDb")
         .setMessage(
-            "Create a developer API token at themoviedb.org/settings/api. Enter the API Read Access"
-                + " Token here using the TV keyboard or phone remote. It is stored encrypted on"
-                + " this device.")
+            "Get your own API key at omdbapi.com/apikey.aspx and activate it using the email from"
+                + " OMDb. Enter it privately with the TV keyboard or phone remote. It is encrypted"
+                + " on this device. The free key has a daily request limit.")
         .passwordInput(text -> value[0] = text)
         .setPositiveButton("Connect", (d, w) -> validateArtworkToken(value[0]))
         .setNegativeButton("Cancel", null)
@@ -760,8 +797,8 @@ public final class ElppaHomeActivity extends Activity {
 
   private void validateArtworkToken(String value) {
     final String token = ArtworkCredentials.normalise(value);
-    if (!token.matches("[A-Za-z0-9._~-]{20,4096}")) {
-      message("Check the token", "Enter the API Read Access Token from your TMDB API settings.");
+    if (!token.matches("[A-Za-z0-9_-]{8,128}")) {
+      message("Check the key", "Enter the activated API key from your OMDb email.");
       return;
     }
     cancelCatalogue();
@@ -771,7 +808,7 @@ public final class ElppaHomeActivity extends Activity {
     HomePanel progress =
         new HomePanel.Builder(this)
             .setTitle("Connecting artwork")
-            .setMessage("Checking your TMDB connection…")
+            .setMessage("Checking your OMDb connection…")
             .setNegativeButton(
                 "Cancel",
                 (d, w) -> {
@@ -808,8 +845,8 @@ public final class ElppaHomeActivity extends Activity {
                     }
                     if (!credentials.save(token)) {
                       message(
-                          "Token not saved",
-                          "This device could not store the token securely. Check the token and try"
+                          "Key not saved",
+                          "This device could not store the key securely. Check the key and try"
                               + " again.");
                       return;
                     }
@@ -821,16 +858,46 @@ public final class ElppaHomeActivity extends Activity {
   }
 
   private void artworkCredits() {
-    new HomePanel.Builder(this)
-        .setTitle("Artwork credits")
-        .brand(R.drawable.tmdb_logo)
-        .setMessage(
-            "This product uses the TMDB API but is not endorsed or certified by TMDB.\n\n"
-                + "Movie and TV artwork: The Movie Database (themoviedb.org). Availability varies"
-                + " by title and language.\n\n"
-                + "Playback and your watch history stay with the original streaming app.")
-        .setNegativeButton("Done", null)
-        .show();
+    HomePanel.Builder panel =
+        new HomePanel.Builder(this)
+            .setTitle("Artwork and data credits")
+            .setMessage(
+                "Movie metadata: OMDb, CC BY-NC 4.0. TV-show data and artwork: TVmaze, CC BY-SA."
+                    + " Images retain their owners' rights. Artwork is fitted for display."
+                    + " Availability varies by title; neither service contains every Indian film or"
+                    + " show. Playback and watch history come from your streaming apps.")
+            .row(
+                "OMDb",
+                "omdbapi.com",
+                () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.omdbapi.com/"))))
+            .row(
+                "TVmaze",
+                "tvmaze.com · API and attribution",
+                () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.tvmaze.com/api"))))
+            .row(
+                "OMDb data licence",
+                "Creative Commons Attribution–NonCommercial 4.0",
+                () ->
+                    open(
+                        new Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://creativecommons.org/licenses/by-nc/4.0/"))))
+            .row(
+                "TVmaze data licence",
+                "Creative Commons Attribution–ShareAlike",
+                () ->
+                    open(
+                        new Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://creativecommons.org/licenses/by-sa/4.0/"))));
+    final String source = catalogueSourceUrl;
+    if (source.startsWith("https://www.tvmaze.com/shows/")
+        || source.startsWith("https://www.imdb.com/title/"))
+      panel.row(
+          "Featured title source",
+          "Open the matched title",
+          () -> open(new Intent(Intent.ACTION_VIEW, Uri.parse(source))));
+    panel.setNegativeButton("Done", null).show();
   }
 
   private void activateHero() {
@@ -988,9 +1055,8 @@ public final class ElppaHomeActivity extends Activity {
         .section("Home")
         .row(
             "Movie artwork",
-            credentials.configured()
-                ? "TMDB connected · backdrops and title logos"
-                : "Connect clean backdrops and title logos",
+            (credentials.configured() ? "OMDb connected" : "OMDb not connected")
+                + (preferences.showArtwork() ? " · Show artwork on" : " · Show artwork off"),
             this::movieArtworkSettings)
         .toggle(
             "Reduce transparency",

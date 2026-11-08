@@ -12,15 +12,15 @@ remote main before editing; preserve user changes. No upstream PRs or new branch
 - Final device: original Sony KD-50X75 (2021). Do not assume X75K/Google TV.
 - Visual target: cinematic background, horizontal app dock, horizontal Watch Next shelf.
   Preserve Outfit and clear remote focus; no video, full-screen blur or background polling.
-- 0.3.0 extends the owner's reference: Wi-Fi/Settings only, icon-only play,
-  clean app tiles, movie captions below focus, subtle illuminated focus, grouped settings
-  side panel, wide 16:9 media, larger uncropped app logos, diffuse glass focus, cached
-  frosted play, and optional TMDB title logos/backdrops. See DESIGN.md.
+- 0.4.0 extends the owner's reference: Wi-Fi/Settings only, icon-only play,
+  clean app tiles, movie captions below focus, shadow-led focus, grouped settings
+  side panel, wide 16:9 media, larger uncropped app logos, dark drop shadows, corner reflections, cached
+  frosted play, public TVmaze show artwork and optional OMDb movie metadata. See DESIGN.md.
 - Preview mode is labelled sample content, not actual movies. Never fill the dock with
-  fake installed OTT apps. Native capture of 0.3.0 is still required.
+  fake installed OTT apps. Native capture of 0.4.0 is still required.
 - **Open Phase 1 requirement:** top-rated + relevant recommended movie hero feed.
-  Current hero uses app preview rows, then Watch Next. Optional TMDB artwork enrichment
-  replaces images and adds title logos; it does not rank or choose recommendations.
+  Current hero uses app preview rows, then Watch Next. TVmaze can enrich show artwork;
+  OMDb supplies movie metadata. Neither integration ranks or chooses recommendations.
   Implement catalogue ranking separately from app watch history; never commit tokens
   or invent entitlement.
 
@@ -67,19 +67,25 @@ Build success is not visual acceptance. Mi Box success is not Sony acceptance.
 Do not report the catalogue feed, subscriptions or universal Continue Watching as working.
 
 
-## Movie artwork connection (0.3.0)
+## Movie artwork connection (0.4.0)
 
-In the launcher open Settings → Movie artwork → Connect TMDB. Use the owner's API Read
-Access Token from https://www.themoviedb.org/settings/api (not the shorter v3 key).
-Enter privately via TV keyboard/phone remote. Do not ask the owner to paste the token
-into chat, logs, shell history or a tracked file. The app validates it before storing it
-with Android Keystore. This workspace did not have a token for live API acceptance.
+TVmaze show artwork is enabled without an API key. It sends known TV-series titles to
+TVmaze, uses exact matching and rejects undersized backgrounds/opaque title-logo art.
+It can be disabled in Settings → Movie artwork → TV show artwork.
 
-Connected mode defaults to neutral fallback if a title cannot be matched or lacks a
-suitable backdrop. “Allow app artwork as fallback” may bring back branded thumbnails.
-Original OTT app links still handle playback. Catalogue artwork is not a top-rated
-recommendation engine; ranking of recommendations remains the separate open requirement.
+For movie details, open Settings → Movie artwork → Connect OMDb. Get the owner's key
+at https://www.omdbapi.com/apikey.aspx and activate it through OMDb's email. Enter it
+privately with the TV keyboard/phone remote; never ask for it in chat, tracked files,
+command arguments or logs. The free tier advertises 1,000 requests/day; successful
+results are cached. OMDb has no cinematic movie backdrop or separate-title-logo API.
 
-Capture real Home and Settings after installation, test rapid selection/Back/offline,
-and verify the correct movie logo appears with the correct title. Do not claim a clean
-image or logo exists for every recommendation.
+Use app backgrounds is on by default and retains existing explicit preferences.
+Turning it off gives a neutral hero when no suitable catalogue artwork exists.
+Provider backgrounds can still contain Top10 badges. OMDb posters are not stretched
+into the hero. Old TMDB credentials are isolated from the OMDb encrypted store.
+
+Capture actual Home with app focus, movie focus and Settings. Check edge-to-edge
+16:9 app banners, neutral padding for nonstandard assets, dark shadow falloff and corner
+reflections on resting cards. Verify rapid selection, Back, offline and correct
+metadata/artwork identity. No native screenshot of 0.4.0 or authenticated OMDb test
+is available from the build workspace. Physical remote/phone tests remain required.

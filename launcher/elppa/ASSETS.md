@@ -8,21 +8,15 @@ The opt-in preview uses three NASA ISS photographs already distributed in the up
 
 Preview titles and progress are fictional UI examples, labelled Preview and never presented as live viewing history. Production artwork comes from the user's installed apps' TV-provider data. Outfit and upstream artwork retain their existing notices in launcher/.
 
+# Catalogue data and artwork (0.4.0)
 
-# TMDB attribution mark
+OMDb movie metadata is licensed CC BY-NC 4.0: https://www.omdbapi.com/ .
+TVmaze data is licensed CC BY-SA 4.0: https://www.tvmaze.com/api . Credits in the app
+link to both services and licences, and the matched show page when available.
+Artwork retains its owners' rights. It is loaded on demand, fitted for display and
+not bundled in this repository. Public images are cached on the device; no
+redistributed catalogue is included. Neither source's data is covered by the code's MIT licence.
 
-`src/main/res/drawable-nodpi/tmdb_logo.png` is a raster rendering of TMDB's approved
-short blue/green mark, preserving its source colours, transparent background and
-aspect ratio. It was obtained from the official [logos and attribution page](https://www.themoviedb.org/about/logos-attribution),
-not generated or redrawn. Source SVG:
-
-https://www.themoviedb.org/assets/v4/logos/v2/blue_short-8e7b30f73a4020692ccca9c88bafe5dcb6f8a62a4c6bc55cd9ba82bb2cd95f6c.svg
-
-The mark belongs to TMDB and is not licensed under this repository's MIT licence.
-Display it in the application's About/Credits section with TMDB's required notice:
-
-> This product uses the TMDB API but is not endorsed or certified by TMDB.
-
-See [TMDB's API FAQ](https://developer.themoviedb.org/docs/faq) for attribution,
-commercial-use and branding requirements. Catalogue-supplied movie/show artwork
-retains its owners' rights; it is loaded on demand and is not bundled into the app.
+The TMDB integration and bundled attribution mark were removed in 0.4.0 at the owner's
+request. Old TMDB credentials are never read by the new OMDb credential store or sent
+to either replacement service.

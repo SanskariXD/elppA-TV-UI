@@ -34,7 +34,8 @@ final class ElppaUi {
   }
 
   static void focus(View view, boolean on, boolean motion, float radius) {
-    view.setBackground(shape(on ? 0xCC353943 : 0x7722262E, radius, on));
+    view.setBackground(shape(on ? 0xEE515963 : 0x7722262E, radius, false));
+    view.setElevation(on ? radius / 3 : 0);
     view.animate().cancel();
     float scale = on ? 1.035f : 1f;
     if (motion && ValueAnimator.areAnimatorsEnabled())

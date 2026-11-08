@@ -1,86 +1,63 @@
-# Artwork and focus research
+# Replacement catalogue research — 9 November 2026
 
-This research supports the owner's clean movie backdrop, separate title-logo and glass-focus
-request. It does not establish a live catalogue test: a valid TMDB credential is still required.
+The owner could not use TMDB's API setup page and requested OMDb or TVmaze instead.
+Cloud access does not establish reachability through the owner's Indian ISP.
 
-## What can be supplied
+## Decision
 
-TMDB's movie and TV-series image endpoints return separate backdrop, poster and logo arrays.
-A launcher can therefore draw a landscape backdrop and independently fit a title logo without
-stretching the logo, placing a textual title underneath only when the logo is unavailable.
-Select a language-neutral backdrop where possible; select a suitable language for title logos.
+OMDb is the appropriate catalogue type for Indian theatrical movies. Its documented
+search accepts movie, series and episode types, title, year and IMDb ID. It documents
+posters, not cinematic backdrops or transparent title logos. The dedicated high-resolution
+Poster API (up to 2000×3000) is patrons-only. It cannot fulfill the earlier movie-art
+requirement on its own. No authenticated OMDb title request was available in this workspace.
 
-- [Movie images](https://developer.themoviedb.org/reference/movie-images)
-- [TV series images](https://developer.themoviedb.org/reference/tv-series-images)
-- [Image languages](https://developer.themoviedb.org/docs/image-languages)
-- [Image URL construction and sizes](https://developer.themoviedb.org/docs/image-basics)
+TVmaze explicitly excludes theatrical and direct-to-video releases. Its public API
+supports TV-series backgrounds and typography images, making it useful as a separate
+show-art source. It requires no API key. Typography does not guarantee transparency.
 
-Image-language metadata is a useful selector, not proof that every returned image contains no
-text, badge or branding. Catalogue coverage varies. Some titles lack logos, sufficiently large
-backdrops, or an unambiguous match. Do not promise this appearance for every recommendation.
-A plain title and neutral background are honest fallbacks when clean catalogue art is unavailable.
+| Capability | OMDb | TVmaze |
+| --- | --- | --- |
+| Theatrical-movie metadata | Yes; completeness unverified | Excluded by inclusion policy |
+| Show metadata | Yes | Yes |
+| Cinematic backdrop endpoint | Not documented | Show gallery `background` type |
+| Separate title artwork | Not documented | `typography`; alpha/quality must be checked |
+| Credential | Personal API key | No key for public API |
+| Public limit | Free key advertises 1,000 requests/day | At least 20 requests/10 seconds/IP; handle 429 |
+| Data licence | CC BY-NC 4.0 | CC BY-SA 4.0 |
 
-The Android TV provider exposes poster/thumbnail URIs and aspect-ratio metadata. Its documentation
-explicitly permits a system-generated thumbnail derived from the poster. It does not promise a
-full-resolution studio backdrop, an independent transparent title logo, or unbranded artwork.
-A badge embedded into an image's pixels cannot be removed by choosing another decode size.
+Sources: [OMDb](https://www.omdbapi.com/), [OMDb key registration](https://www.omdbapi.com/apikey.aspx),
+[OMDb schema](https://www.omdbapi.com/swagger.json), [TVmaze API](https://www.tvmaze.com/api),
+[TVmaze inclusion policy](https://www.tvmaze.com/faq/51/a-short-guide-for-new-users),
+[image classifications](https://www.tvmaze.com/faq/14/show-extras).
 
-- [TvContract.PreviewPrograms](https://developer.android.com/reference/android/media/tv/TvContract.PreviewPrograms)
-- [TvContract.WatchNextPrograms](https://developer.android.com/reference/android/media/tv/TvContract.WatchNextPrograms)
+## Live Indian-show samples
 
-## Authentication, matching and playback
+These are a small sample, not proof of complete regional coverage. API show metadata
+and gallery responses were checked. The dimensions are source metadata, not evidence
+of how the launcher renders on a TV.
 
-TMDB supports application authentication through an API Read Access Token in an Authorization
-Bearer header. Image-file URLs are constructed from returned paths and supported sizes; a file
-URL being publicly retrievable does not provide credential-free catalogue search.
+| Show | Language | Gallery | Observed background | Separate typography |
+| --- | --- | --- | --- | --- |
+| Sacred Games | Hindi | [18197](https://api.tvmaze.com/shows/18197/images) |1920×1080 |None |
+| Suzhal - The Vortex | Tamil | [62771](https://api.tvmaze.com/shows/62771/images) |1200×700; below chosen threshold |None |
+| Dhootha | Telugu | [73104](https://api.tvmaze.com/shows/73104/images) |1920×1080 |None |
+| Ekam | Kannada | [80979](https://api.tvmaze.com/shows/80979/images) |1920×1080 |Opaque JPEG; unsuitable overlay |
+| Kerala Crime Files | Malayalam | [69583](https://api.tvmaze.com/shows/69583/images) |1920×1080 |None |
+| Mirzapur | Hindi | [39868](https://api.tvmaze.com/shows/39868/images) |Includes 1280×720 |None |
 
-- [Application authentication](https://developer.themoviedb.org/docs/authentication-application)
+A fuzzy TVmaze search for the movie Dangal returned unrelated shows. This supports
+strict type and identity matching; a first search result is not evidence of a match.
+OMDb without an API key returned an authentication error. No shared/example key was
+used. No broad claim about its Indian movie completeness is made.
 
-Match title, media type and an explicit release year when available. Do not assume the first or
-most popular search result is correct: remakes and identically named series/movies are common.
-Prefer a conservative empty result to displaying the wrong movie logo. Provider-specific IDs
-are not automatically TMDB IDs. Episodic content can use matched series artwork when its provider
-title names the series; playback must keep the original installed-app deep link and progress.
-Artwork matching does not establish streaming entitlement or change the recommendation ranking.
+## UI correction grounded in the device photo
 
-No access token should appear in Git, diagnostic output or URLs. Apply request timeouts,
-cancellation, bounded metadata/image caches and a retry cooldown. A missing credential,
-authorization failure or outage must leave Home responsive.
+The visible thick cyan/pink frame came from the launcher's 6-unit banner inset plus
+sampled corner-colour backplate, compounded by 152×92 card geometry around 16:9 banners.
+Version 0.4.0 uses 160×90 app cards, no banner inset and no sampled-colour frame.
+Full logos remain fitted; nonstandard banners may have neutral letterboxing.
 
-## Attribution
-
-TMDB requires its approved mark and the notice below in an application's About/Credits section:
-
-> This product uses the TMDB API but is not endorsed or certified by TMDB.
-
-The approved mark is bundled as `tmdb_logo.png`, with its source recorded in
-[ASSETS.md](../../launcher/elppa/ASSETS.md). The documented developer API is available for
-non-commercial use with attribution; commercial use requires contacting TMDB.
-
-- [FAQ and attribution requirements](https://developer.themoviedb.org/docs/faq)
-- [Official logos](https://www.themoviedb.org/about/logos-attribution)
-
-## Applying the Apple TV design reference to Android
-
-Apple describes tvOS focus using elevation, illumination and animation, with enough room for a
-focused item to expand and assets sharp enough at that larger size. It also describes subtle
-layered parallax; that is an optional treatment for media images, not a reason to invent missing
-foreground/background layers from a flat provider image.
-
-- [Focus and selection](https://developer.apple.com/design/human-interface-guidelines/focus-and-selection/)
-- [Images](https://developer.apple.com/design/human-interface-guidelines/images)
-- [Layout](https://developer.apple.com/design/human-interface-guidelines/layout)
-
-Apple's Liquid Glass guidance has device-specific support even within Apple TV hardware. On this
-Android launcher, a bounded static frosting treatment and brief focus animation are appropriate
-translations of the reference; they are not native Apple's Liquid Glass APIs. Keep motion
-cancellable, respect animation settings, and avoid a perpetual shimmer or full-screen blur pass.
-
-- [Materials](https://developer.apple.com/design/human-interface-guidelines/materials)
-- [Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass)
-
-For this product, **16:9 movie cards** is an implementation choice consistent with landscape
-streaming artwork. Larger app cards should fit full provider banners/logos without cropping.
-Exact card size, glow intensity and legibility still require captures on the Mi Box, including
-first/last cards, settings, enlarged text and rapid D-pad movement. Source review and successful
-builds cannot establish the final visual appearance on the television.
+The former multi-stroke glow is removed. Native dark shadows, a small lift and scale
+communicate focus. Subtle radial corner reflections are present on resting app cards,
+fade fully inside their bounds and do not form a perimeter. Actual falloff and focus
+visibility still require a native Mi Box screenshot and D-pad check.

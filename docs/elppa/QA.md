@@ -130,3 +130,42 @@ logo coverage for every title, measured FPS, or final visual match is claimed. P
 software emulators were unusable and no TV is connected to this workspace. Test on
 Mi Box before considering Sony compatible. See CATALOGUE-ARTWORK.md and
 ARTWORK-RESEARCH.md for primary sources and setup.
+
+## 0.4.0 — device-photo frame correction and provider replacement
+
+The owner's close-up exposed a thick coloured frame around app banners. Root and card
+review identified the six-unit inset, mismatched card aspect and sampled-colour backplate.
+These are removed: app cards are 160×90 (16:9), with no banner inset, cropped logo or
+synthetic brand-colour frame. Nonstandard assets are neutrally fitted; square icons
+retain padding. FocusGlow is deleted. Native dark elevation shadows, lift and scale
+replace perimeter glow; restrained corner reflections appear on resting app cards.
+Wi-Fi/Settings focus also loses its white stroke.
+
+TMDB is replaced with OMDb movie metadata and TVmaze show artwork. The new credential
+store cannot send legacy TMDB tokens to either service. OMDb cannot supply cinematic
+movie backgrounds or title logos. TVmaze can supply some show backgrounds, but actual
+logo transparency is checked and missing logos use text. App-background fallback is
+on by default unless explicitly disabled, and may still include provider badges.
+
+Independent review fixed preferred-image download fallback, content-type refresh,
+same-title metadata freshness, sliding rate cooldowns, partial-metadata caching and
+safe API error classification. Original OTT playback links/history are unchanged.
+
+Verification: both modules' release unit tests, lint and APK assembly passed.
+315 upstream + 39 elppA = 354 tests, zero failures/errors. The 13 new policy tests cover
+Indian-script exact matching, remakes, media types, artwork dimensions, opaque logos,
+URL validation and API errors. All 5 setup tests passed. Lint has zero errors,
+116 elppA warnings and 96 upstream warnings. The full inherited Python suite was not
+rerun; the device/setup behavior is unchanged.
+
+Public TVmaze show/gallery responses were checked for six Indian shows across Hindi,
+Tamil, Telugu, Kannada and Malayalam. Five exposed qualifying landscape dimensions;
+Suzhal was below the 1280×720 threshold. Separate transparent logos were unavailable
+in these samples. This is sample evidence, not complete Indian catalogue coverage.
+OMDb authenticated responses remain untested because no owner API key is present.
+
+No device is connected here. The photograph verifies the earlier rendering defect,
+not the new appearance. Native shadow falloff, logo fit, rapid D-pad selection,
+network failure behavior, API-key storage and physical remote/phone integration still
+need a Mi Box acceptance pass. No measured hardware-performance or final visual-quality
+claim is made. Mi Box testing does not certify the Sony X75.

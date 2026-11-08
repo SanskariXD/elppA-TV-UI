@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-08T19:22:04.209112+00:00",
-  "title": "elppA TV \u2014 catalogue hero and glass focus 0.3.0",
+  "title": "elppA TV \u2014 borderless cards and catalogue sources 0.4.0",
   "extensions": {
     "colorMeta": {
       "text": {
@@ -176,7 +176,13 @@
         "purpose": "Preferred36; minimum26 logical units; provider text when no title logo exists."
       }
     },
-    "shadows": [],
+    "shadows": [
+      {
+        "name": "card",
+        "value": "black native elevation 3; focused translationZ 9 logical units",
+        "purpose": "Depth without a light perimeter"
+      }
+    ],
     "motion": [
       {
         "name": "card-focus",
@@ -209,8 +215,8 @@
       },
       "viewportScale": "min(width/960, height/540), centred canvas",
       "typeScale": "Logical canvas \u00d7 viewport scale \u00d7 min(fontScale,1.5); hero/subtitle/caption auto-fit.",
-      "focusStroke": "No crisp stroke; twelve diffuse tinted layers and static reflection, reduced transparency uses solid focus",
-      "focusTarget": "D-pad remote; no runtime hover state",
+      "focusStroke": "None; native dark elevation shadow, scale and lift. Small corner reflections on resting app cards.",
+      "focusTarget": "D-pad focus and mouse hover",
       "scrims": {
         "leftToRightAndroidArgb": [
           "0xE6090B10",
@@ -226,12 +232,12 @@
       },
       "previewMode": "Opt-in sample content; no fictional watch history is presented as real.",
       "specimenLimit": "HTML/CSS are reference-scale translations for the design panel, not app code or native verification. Browser font fallback and hover are panel-only affordances. Native screenshots and physical Sony tests remain pending.",
-      "validation": "Build and tests recorded in QA.md; authenticated artwork/native device acceptance pending"
+      "validation": "Automated checks recorded in QA.md; native Mi Box and authenticated OMDb acceptance pending"
     }
   },
   "components": [],
   "narrative": {
-    "northStar": "Match the owner\u2019s second reference: cinematic artwork, two utility icons, clean app cards, below-card movie captions and soft focus lighting.",
+    "northStar": "Cinematic Home, complete uncropped app banners, dark drop shadows and restrained corner reflections.",
     "overview": "The supplied cinematic Apple-TV-like mockup remains the visual authority: landscape artwork fills the television, a left/bottom scrim carries readable text, and horizontal app and media rails keep the next action close. This is a remote-first native Android TV surface for the Sony KD-50X75, viewed from a sofa.\n\nWarm-white Outfit text, charcoal surfaces and restrained focus feedback let provider artwork supply the colour. Native Android dialogs handle occasional settings and recovery tasks. This document records the implemented source; it does not establish visual acceptance or certify the Sony device.",
     "keyCharacteristics": [
       "Full-bleed still artwork with left and bottom scrims.",

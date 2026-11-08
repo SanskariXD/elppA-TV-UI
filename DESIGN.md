@@ -1,6 +1,6 @@
 ---
 name: elppA TV
-description: Cinematic Android TV Home with illuminated focus and a native settings side panel.
+description: Cinematic Android TV Home with shadow-led focus and a native settings side panel.
 colors:
   text: "#F4F2EF"
   muted: "#CDCBC8"
@@ -26,7 +26,7 @@ rounded:
   panel: "22px"
 ---
 
-# Cinematic Home — 0.3.0
+# Cinematic Home — 0.4.0
 
 The owner's second reference image is the visual authority. Home is an artwork-led,
 remote-operated surface. Native Java and RecyclerView keep rendering bounded on the
@@ -46,7 +46,7 @@ Backdrop and scrims fill the full window. Outfit is bundled through the shared U
 | Enlarged title | y76, height96; same baseline and auto-sizing |
 | Provider metadata | x50 y182, 440×28; no decorative eyebrow |
 | Play action | x50 y220, 88×36; vector triangle; accessible title/provider label |
-| App dock | x24 y264, 912×112; 152×92 cards, 16-unit total horizontal margin |
+| App dock | x24 y264, 912×112; 160×90 (16:9) cards, 16-unit total horizontal margin |
 | Media rail | x24 y378, 912×158; 176×99 (16:9) cards plus reserved caption space |
 | Empty state | x36 y420, 888×70; access/diagnostics remain reachable |
 
@@ -62,16 +62,19 @@ cannot be loaded. Progress remains sourced from app-published playback metadata.
 
 ## Focus and motion
 
-Unfocused and focused cards have no crisp perimeter stroke. FocusGlow draws twelve
-broad low-opacity tinted strokes, ending in a diffuse falloff rather than a final white
-rim. CardReflection adds a fixed diagonal sheen and a soft radial light above artwork.
-App banners use FIT_CENTER with 6-unit insets; square icons use 22. A 16×16 corner sample
-extends the banner's surface colour without cropping the logo. Sampled colours are
-cached per rail; no image sampling runs each frame.
+App cards use their native landscape banner edge to edge in a 160×90 (16:9) tile.
+FIT_CENTER preserves complete logos; banners get zero synthetic inset. Square icons
+retain 22-unit padding. Non-16:9 artwork may have neutral letterboxing instead of
+cropping. There is no sampled-colour backplate or perimeter stroke. The user's device
+photo exposed how the old 6-unit inset plus sampled colour made an ugly thick frame.
 
-The card lifts 3 logical units and scales to 1.045 over 200 ms with a decelerating curve.
-D-pad and mouse hover share focus. Reduced motion snaps these transforms. Reduce
-transparency removes gloss/tinted falloff and uses a solid brighter focus surface.
+The entire card has a rounded outline and native black elevation shadow (base 3,
+focused translationZ 9 logical units). It lifts 3 units and scales to 1.045 over 200 ms
+with a decelerating curve. FocusGlow is removed. App cards have a small upper-left
+reflection that fades to zero, with a fainter lower-right reflection, even at rest;
+movie artwork receives no decorative gloss. No reflection traces the perimeter.
+D-pad and mouse hover share focus. Reduced motion snaps transforms. Reduce transparency
+removes corner reflections; the focus scale, lift and shadow remain visible.
 The single play button uses a 64×32 crop of the actual backdrop, blurred with two small
 separable box passes on an artwork worker once per hero. A translucent tint and fixed
 sheen finish the surface; no full-screen blur or per-frame sampling is used.
@@ -101,21 +104,26 @@ remains until an image loads, and returns for missing/ambiguous logos. Logos are
 redrawn in a lookalike typeface. Watch history, source app and playback URI remain
 from the installed app.
 
-Settings → Movie artwork connects an owner-provided TMDB API Read Access Token.
-The app validates it over HTTPS, stores it encrypted with Android Keystore, and includes
-the approved TMDB mark and required notice in Artwork credits. Names of focused/featured
-titles are sent to TMDB for artwork lookup. No shared credential ships in the app.
+Settings → Movie artwork now uses OMDb and TVmaze instead of TMDB. TVmaze show-art
+lookup is enabled by default and can be switched off. OMDb movie metadata requires
+an owner-provided API key, validated over HTTPS and encrypted with Android Keystore.
+The separate credential namespace never sends an old TMDB token to the replacements.
+Movie details can add release year, language and an IMDb score to the provider line;
+this is metadata, not recommendation ranking.
 
-The resolver matches exact normalized titles/types, using an explicit title year when
-provided; ambiguous remakes and unidentified episode/season rows are left unresolved.
-It selects language-neutral landscape backdrops >=1280×720 and a suitable PNG logo,
-using configuration-advertised CDN sizes. No-language metadata cannot prove image pixels
-contain no text. Asset coverage is incomplete; no “all titles” guarantee is made.
+Known TV-series entries use conservative exact title/year matching with TVmaze.
+Unknown types require an OMDb key and a unique identity before show lookup. Ambiguous
+remakes and unidentified episode/season rows are left unresolved. TVmaze backgrounds
+must be landscape and at least 1280×720. Typography must be a suitable PNG with real
+transparent and visible pixels; opaque JPEG title art is rejected. OMDb supplies no
+movie backdrop or separate logo, so portrait posters are never stretched into the hero.
 
-Before connection, provider artwork remains available. Once connected, a missing clean
-match defaults to a neutral hero with title text. Optional provider fallback is clearly
-labelled as potentially containing badges/low-resolution art. A Top10 badge baked into
-provider pixels is not erased; a different catalogue image replaces that image.
+Use app backgrounds is enabled by default, preserving an existing explicit setting.
+It keeps the original app artwork when replacement art is unavailable, including any
+baked-in badges. Switching it off uses a neutral hero with title text if there is no
+suitable catalogue background. The new services cannot guarantee badge-free artwork
+or logos for all Indian movies. Titles are sent only to the corresponding enabled
+source. Credits link to both services, their licences and the matched show page.
 
 Requests wait 180 ms for focus to settle, run on one catalogue worker, cancel on hero
 changes/hidden Home, and use bounded metadata cache/TTL, timeouts and HTTP cooldowns.

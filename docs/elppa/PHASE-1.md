@@ -69,6 +69,11 @@ Version 0.1.1 prepares the Xiaomi Mi Box test session. Follow [MIBOX-TEST.md](MI
 
 The owner supplied a working Mi Box photo. Home and settings are refined toward the cinematic reference; see DESIGN.md and the 0.2.0 entry in [QA.md](QA.md). Fresh native captures and performance checks are still required. The catalogue ranking requirement remains open.
 
-## Catalogue artwork and focus revision 0.3.0
+## Catalogue and card revision 0.4.0
 
-Optional authenticated TMDB title-logo/backdrop enrichment and wide 16:9 cards are implemented. Setup lives in [CATALOGUE-ARTWORK.md](CATALOGUE-ARTWORK.md). Live API/native device acceptance remains pending; metadata ranking/top-rated recommendations remain a separate open requirement.
+The owner requested replacing TMDB. OMDb supplies optional movie metadata; TVmaze
+supplies public show artwork where available. Cinematic movie backgrounds and separate
+movie logos are not available from OMDb. See [CATALOGUE-ARTWORK.md](CATALOGUE-ARTWORK.md).
+App cards are now 16:9 and edge to edge, without the former inset/coloured frame or glow.
+Dark shadows and restrained resting corner reflections provide depth. Metadata ranking
+and personalised/top-rated recommendations remain a separate open requirement.
