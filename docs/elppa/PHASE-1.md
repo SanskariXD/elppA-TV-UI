@@ -64,3 +64,7 @@ See [QA.md](QA.md) for the current test results and the exact cinematic-backgrou
 ## Current hardware test handoff
 
 Version 0.1.1 prepares the Xiaomi Mi Box test session. Follow [MIBOX-TEST.md](MIBOX-TEST.md) and [CODEX-CLI.md](CODEX-CLI.md). Exact box model/firmware and physical acceptance are pending; see the latest entry in [QA.md](QA.md).
+
+## Cinematic UI revision 0.2.0
+
+The owner supplied a working Mi Box photo. Home and settings are refined toward the cinematic reference; see DESIGN.md and the 0.2.0 entry in [QA.md](QA.md). Fresh native captures and performance checks are still required. The catalogue ranking requirement remains open.

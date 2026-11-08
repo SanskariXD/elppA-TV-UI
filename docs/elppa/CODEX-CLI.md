@@ -12,11 +12,11 @@ remote main before editing; preserve user changes. No upstream PRs or new branch
 - Final device: original Sony KD-50X75 (2021). Do not assume X75K/Google TV.
 - Visual target: cinematic background, horizontal app dock, horizontal Watch Next shelf.
   Preserve Outfit, clear remote focus, no video/blur/background polling.
-- 0.1.1 refines hero grouping, enlarges app tiles to 144×86 reference units, fills
-  their banners, and suppresses duplicate stock Settings tiles from the dock unless pinned.
-  Settings remain in All apps and the upper-right control. No installed app is removed.
+- 0.2.0 implements the owner's reference: Wi-Fi/Settings only, icon-only play,
+  clean app tiles, movie captions below focus, subtle illuminated focus, grouped settings
+  side panel, and better selection/decoding of app artwork. See DESIGN.md.
 - Preview mode is labelled sample content, not actual movies. Never fill the dock with
-  fake installed OTT apps. Native capture of 0.1.1 is still required.
+  fake installed OTT apps. Native capture of 0.2.0 is still required.
 - **Open Phase 1 requirement:** top-rated + relevant recommended movie hero feed.
   Current hero uses app preview rows, then Watch Next; no ratings ranking or TMDB integration.
   Implement an authenticated catalogue source separately from app watch history. Agree the

@@ -123,6 +123,7 @@ final class HomeRail extends RecyclerView {
 
   private final class Tile extends ViewHolder {
     final FrameLayout frame;
+    final FrameLayout card;
     final ImageView image;
     final TextView label;
     final TextView fallback;
@@ -136,23 +137,33 @@ final class HomeRail extends RecyclerView {
       frame.setClickable(true);
       frame.setId(View.generateViewId());
       frame.setClipChildren(false);
+      frame.setClipToPadding(false);
+      card = new FrameLayout(c);
+      card.setClipChildren(false);
+      card.setClipToPadding(false);
+      frame.addView(card);
       fallback = ElppaUi.text(c, 13);
       fallback.setMaxLines(3);
       fallback.setGravity(Gravity.CENTER);
       fallback.setEllipsize(android.text.TextUtils.TruncateAt.END);
-      frame.addView(fallback);
+      card.addView(fallback);
       image = new ImageView(c);
       image.setScaleType(ImageView.ScaleType.CENTER_CROP);
       image.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-      frame.addView(image);
+      card.addView(image);
       label = ElppaUi.text(c, 11);
-      label.setMaxLines(1);
+      label.setMaxLines(2);
       label.setEllipsize(android.text.TextUtils.TruncateAt.END);
-      label.setGravity(Gravity.CENTER_VERTICAL);
+      label.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
       frame.addView(label);
       progress = new View(c);
       progress.setBackgroundColor(ElppaUi.TEXT);
-      frame.addView(progress);
+      card.addView(progress);
+      frame.setOnHoverListener(
+          (v, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_HOVER_ENTER) v.requestFocus();
+            return false;
+          });
       frame.setOnClickListener(v -> events.clicked(item));
       frame.setOnLongClickListener(
           v -> {
@@ -161,8 +172,8 @@ final class HomeRail extends RecyclerView {
           });
       frame.setOnFocusChangeListener(
           (v, on) -> {
-            ElppaUi.focus(frame, on, events.motion(), px(10));
-            label.setVisibility(on ? VISIBLE : INVISIBLE);
+            focusCard(on);
+            label.setVisibility(media && on ? VISIBLE : INVISIBLE);
             if (on) {
               int p = getBindingAdapterPosition();
               if (p != NO_POSITION) lastPosition = p;
@@ -183,37 +194,65 @@ final class HomeRail extends RecyclerView {
           });
     }
 
+    private void focusCard(boolean on) {
+      card.setBackground(new FocusGlow(px(12), scale, on));
+      card.animate().cancel();
+      float zoom = on ? 1.055f : 1f;
+      float lift = on ? -px(2) : 0;
+      if (events.motion() && android.animation.ValueAnimator.areAnimatorsEnabled())
+        card.animate()
+            .scaleX(zoom)
+            .scaleY(zoom)
+            .translationY(lift)
+            .setDuration(180)
+            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+            .start();
+      else {
+        card.setScaleX(zoom);
+        card.setScaleY(zoom);
+        card.setTranslationY(lift);
+      }
+    }
+
     void bind(Object next) {
       item = next;
-      int w = px(media ? 172 : 144), h = px(media ? 97 : 86);
-      RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(w, h);
-      lp.setMargins(px(3), px(5), px(10), px(4));
+      int w = px(media ? 128 : 104), h = px(media ? 104 : 72);
+      RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(w, h + px(media ? 30 : 0));
+      lp.setMargins(px(6), px(10), px(6), px(8));
       frame.setLayoutParams(lp);
-      frame.setBackground(ElppaUi.shape(ElppaUi.SURFACE, px(10), frame.hasFocus()));
+      frame.setBackgroundColor(Color.TRANSPARENT);
+      card.setLayoutParams(new FrameLayout.LayoutParams(w, h));
+      focusCard(frame.hasFocus());
       fallback.setLayoutParams(
           new FrameLayout.LayoutParams(w - px(24), h - px(24), Gravity.CENTER));
       ElppaUi.type(fallback, 13, scale);
       fallback.setVisibility(media ? VISIBLE : GONE);
       image.setLayoutParams(
           new FrameLayout.LayoutParams(
-              w - px(6), h - px(6), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
-      image.setTranslationY(px(3));
-      image.setBackground(ElppaUi.shape(Color.TRANSPARENT, px(8), false));
+              w - px(2), h - px(2), Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+      image.setTranslationY(px(1));
+      image.setBackground(ElppaUi.shape(Color.TRANSPARENT, px(11), false));
       image.setClipToOutline(true);
       FrameLayout.LayoutParams textLp =
-          new FrameLayout.LayoutParams(
-              w - px(16), px(19), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-      textLp.bottomMargin = px(media ? 5 : 0);
+          new FrameLayout.LayoutParams(w, px(28), Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+      textLp.topMargin = h + px(10);
       label.setLayoutParams(textLp);
-      ElppaUi.type(label, media ? 10 : 10.5f, scale);
-      label.setVisibility(frame.hasFocus() ? VISIBLE : INVISIBLE);
-      label.setBackgroundColor(0xDD090B10);
+      ElppaUi.type(label, 11, scale);
+      label.setAutoSizeTextTypeUniformWithConfiguration(
+          Math.max(1, px(9)),
+          Math.max(2, px(11 * Math.min(1.5f, getResources().getConfiguration().fontScale))),
+          1,
+          android.util.TypedValue.COMPLEX_UNIT_PX);
+      label.setVisibility(media && frame.hasFocus() ? VISIBLE : INVISIBLE);
+      label.setBackgroundColor(Color.TRANSPARENT);
       label.setPadding(px(4), 0, px(4), 0);
       if (next instanceof MediaEntry) {
         MediaEntry e = (MediaEntry) next;
-        artwork.load(image, e.heroArt(), px(344), px(194));
+        image.setPadding(0, 0, 0, 0);
+        image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        artwork.load(image, e.heroArt(), px(256), px(208));
         fallback.setText(e.title);
-        label.setText(e.title + " · " + events.sourceName(e.source));
+        label.setText(e.title);
         frame.setContentDescription(
             e.title + ", " + events.sourceName(e.source) + ", " + e.subtitle);
         FrameLayout.LayoutParams bar =
@@ -247,8 +286,6 @@ final class HomeRail extends RecyclerView {
           frame.setContentDescription(getContext().getString(R.string.elppa_all_apps));
         }
       }
-      frame.setScaleX(frame.hasFocus() ? 1.035f : 1);
-      frame.setScaleY(frame.hasFocus() ? 1.035f : 1);
     }
   }
 }

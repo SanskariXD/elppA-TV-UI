@@ -66,3 +66,33 @@ review and physical remote/phone/standby checks remain pending. Xiaomi Mi Box is
 the first hardware test target; exact model/API/firmware must be probed, not assumed.
 Mi Box testing does not certify Sony settings/inputs or remote compatibility.
 Use [MIBOX-TEST.md](MIBOX-TEST.md) and [CODEX-CLI.md](CODEX-CLI.md).
+
+
+## 0.2.0 — reference UI and artwork quality
+
+Implemented from the owner's current Mi Box photo and second cinematic reference:
+Wi-Fi/Settings only on Home; single accessible play icon; no Next pick/text action;
+no app labels; movie labels below the focused card; quieter rounded cards with a
+thin tinted edge, static soft light falloff and 180 ms focus lift. The shelf heading
+is removed. Settings and launcher-owned menus use a grouped, scrollable side panel.
+Inputs is still accessible in Settings. Source selection retains Save/Cancel.
+
+Artwork now compares both supplied candidates by landscape suitability/detail;
+source and decoded dimensions appear in Content diagnostics. Decode sampling avoids
+premature undersizing, then filters down to at most 1920×1080. No provider URL guessing,
+upscaling or new catalogue credentials are used. Low-resolution provider art remains
+a source limitation. The top-rated/personal recommendation feed is still outstanding.
+
+Automated checks: 315 upstream + 16 elppA release tests passed (5 new artwork policy
+regressions); both release builds and lint passed with zero errors. Lint warnings:
+116 elppA and 96 upstream. No setup script changed; full Python suite not rerun.
+
+Native acceptance is pending: the workspace has no connected Mi Box, and its earlier
+software emulator attempts could not produce a usable session. The owner's supplied
+photo confirms the preceding app ran and displayed provider rows; it does not verify
+0.2.0. No visual/performance or physical-integration pass is claimed here.
+
+Next device checks: capture Home with app focus, movie focus (caption below), settings,
+source switches and large text; inspect top and bottom safe areas, rapid D-pad movement,
+Back, physical voice and phone remote. Check diagnostics on a blurry title to distinguish
+small supplied artwork from a decode problem. Keep captures and identifiers out of Git.

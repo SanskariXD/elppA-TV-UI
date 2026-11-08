@@ -1,7 +1,6 @@
 package com.gathin.tvhome;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -57,9 +56,9 @@ public final class ElppaHomeActivity extends Activity {
   private boolean active, observing, initialFocus;
   private boolean loading = true;
   private FrameLayout root;
-  private ImageView backdrop, network, settings, inputs;
+  private ImageView backdrop, network, settings, action;
   private TextClock clock;
-  private TextView title, subtitle, action, next, heading, empty, status;
+  private TextView title, subtitle, empty, status;
   private HomeRail appsRail, mediaRail;
   private final List<AppCatalog.App> apps = new ArrayList<>();
   private List<MediaEntry> heroes = new ArrayList<>();
@@ -150,7 +149,6 @@ public final class ElppaHomeActivity extends Activity {
     clock.setTextColor(ElppaUi.TEXT);
     clock.setTypeface(UiFont.get(this, R.string.font_regular));
     root.addView(clock);
-    inputs = icon(R.drawable.ic_input, R.string.elppa_inputs, this::showInputs);
     network =
         icon(
             R.drawable.ic_wifi,
@@ -167,30 +165,18 @@ public final class ElppaHomeActivity extends Activity {
     subtitle.setMaxLines(2);
     subtitle.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(subtitle);
-    action = ElppaUi.button(this, getString(R.string.elppa_content_access));
-    root.addView(action);
-    action.setOnClickListener(v -> activateHero());
-    next = ElppaUi.button(this, "Next pick");
-    root.addView(next);
-    next.setOnClickListener(
-        v -> {
-          if (!heroes.isEmpty()) showHero(heroes.get(++heroIndex % heroes.size()));
-        });
-    for (TextView v : new TextView[] {action, next}) {
-      v.setOnFocusChangeListener(
-          (view, on) -> ElppaUi.focus(view, on, preferences.motion(), 22 * scale));
-      v.setOnKeyListener(
-          (view, key, event) -> {
-            if (key == KeyEvent.KEYCODE_DPAD_DOWN || key == KeyEvent.KEYCODE_DPAD_UP) {
-              if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                if (key == KeyEvent.KEYCODE_DPAD_DOWN) appsRail.focusLast();
-                else settings.requestFocus();
-              }
-              return true;
+    action = icon(R.drawable.elppa_play, R.string.elppa_continue, this::activateHero);
+    action.setOnKeyListener(
+        (v, key, event) -> {
+          if (key == KeyEvent.KEYCODE_DPAD_DOWN || key == KeyEvent.KEYCODE_DPAD_UP) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+              if (key == KeyEvent.KEYCODE_DPAD_DOWN) appsRail.focusLast();
+              else settings.requestFocus();
             }
-            return false;
-          });
-    }
+            return true;
+          }
+          return false;
+        });
     appsRail =
         new HomeRail(
             this,
@@ -214,8 +200,10 @@ public final class ElppaHomeActivity extends Activity {
 
               @Override
               public void vertical(boolean up) {
-                if (up) action.requestFocus();
-                else if (!mediaRail.empty()) mediaRail.focusLast();
+                if (up) {
+                  if (action.getVisibility() == View.VISIBLE) action.requestFocus();
+                  else settings.requestFocus();
+                } else if (!mediaRail.empty()) mediaRail.focusLast();
                 else empty.requestFocus();
               }
 
@@ -230,9 +218,6 @@ public final class ElppaHomeActivity extends Activity {
               }
             });
     root.addView(appsRail);
-    heading = ElppaUi.text(this, 15);
-    heading.setText(R.string.elppa_watch_next);
-    root.addView(heading);
     mediaRail =
         new HomeRail(
             this,
@@ -300,12 +285,8 @@ public final class ElppaHomeActivity extends Activity {
           if (r - l != or - ol || b - t != ob - ot) arrange(r - l, b - t);
         });
     action.setNextFocusLeftId(action.getId());
-    action.setNextFocusRightId(next.getId());
-    next.setNextFocusLeftId(action.getId());
-    next.setNextFocusRightId(next.getId());
-    inputs.setNextFocusLeftId(inputs.getId());
-    inputs.setNextFocusRightId(network.getId());
-    network.setNextFocusLeftId(inputs.getId());
+    action.setNextFocusRightId(action.getId());
+    network.setNextFocusLeftId(network.getId());
     network.setNextFocusRightId(settings.getId());
     settings.setNextFocusLeftId(network.getId());
     settings.setNextFocusRightId(settings.getId());
@@ -326,7 +307,10 @@ public final class ElppaHomeActivity extends Activity {
     v.setOnKeyListener(
         (view, key, event) -> {
           if (key == KeyEvent.KEYCODE_DPAD_DOWN) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) action.requestFocus();
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+              if (action.getVisibility() == View.VISIBLE) action.requestFocus();
+              else appsRail.focusLast();
+            }
             return true;
           }
           return key == KeyEvent.KEYCODE_DPAD_UP;
@@ -339,32 +323,28 @@ public final class ElppaHomeActivity extends Activity {
     if (width == 0 || height == 0) return;
     scale = Math.min(width / 960f, height / 540f);
     boolean largeText = getResources().getConfiguration().fontScale > 1.05f;
-    place(clock, 36, 24, 250, largeText ? 44 : 32);
-    ElppaUi.type(clock, 25, scale);
-    place(inputs, 762, 20, 42, 42);
-    place(network, 820, 20, 42, 42);
-    place(settings, 878, 20, 42, 42);
-    for (ImageView v : new ImageView[] {inputs, network, settings})
-      v.setPadding(px(10), px(10), px(10), px(10));
-    place(title, 48, largeText ? 72 : 88, 540, largeText ? 124 : 108);
-    ElppaUi.type(title, 46, scale);
-    fitText(title, 32, 46);
-    place(subtitle, 48, 204, 540, 32);
-    ElppaUi.type(subtitle, 13, scale);
-    fitText(subtitle, 12, 13);
-    place(action, 48, 244, 192, 40);
-    place(next, 252, 244, 112, 40);
-    ElppaUi.type(action, 14, scale);
-    ElppaUi.type(next, 13, scale);
-    place(appsRail, 42, 292, 882, 96);
+    place(clock, 36, 16, 250, largeText ? 42 : 32);
+    ElppaUi.type(clock, 23, scale);
+    place(network, 848, 14, 38, 38);
+    place(settings, 900, 14, 38, 38);
+    for (ImageView v : new ImageView[] {network, settings})
+      v.setPadding(px(9), px(9), px(9), px(9));
+    place(title, 48, largeText ? 76 : 94, 450, largeText ? 96 : 78);
+    ElppaUi.type(title, 36, scale);
+    fitText(title, 26, 36);
+    place(subtitle, 50, 182, 440, 28);
+    ElppaUi.type(subtitle, 12, scale);
+    fitText(subtitle, 11, 12);
+    place(action, 50, 220, 88, 36);
+    action.setPadding(px(33), px(9), px(33), px(9));
+    action.setBackground(ElppaUi.shape(0x665F5952, px(20), false));
+    place(appsRail, 24, 270, 912, 94);
     appsRail.scale(scale);
-    place(heading, 48, 392, 850, 24);
-    ElppaUi.type(heading, 15, scale);
-    place(mediaRail, 42, 416, 882, 106);
+    place(mediaRail, 24, 366, 912, 146);
     mediaRail.scale(scale);
-    place(empty, 48, 434, 864, 70);
+    place(empty, 36, 420, 888, 70);
     ElppaUi.type(empty, 14, scale);
-    place(status, 330, 28, 400, 28);
+    place(status, 330, 22, 450, 24);
     ElppaUi.type(status, 10, scale);
     if (selected != null) loadHeroArt(selected);
   }
@@ -532,8 +512,7 @@ public final class ElppaHomeActivity extends Activity {
     else if (snapshot != null && !snapshot.watchRead && !preferences.demo())
       empty.setText("Couldn't read Continue watching. Open content diagnostics to check access.");
     else empty.setText(R.string.elppa_empty_detail);
-    next.setVisibility(heroes.size() > 1 ? View.VISIBLE : View.GONE);
-    action.setNextFocusRightId(heroes.size() > 1 ? next.getId() : action.getId());
+    action.setVisibility(heroes.isEmpty() ? View.GONE : View.VISIBLE);
     MediaEntry retained = null;
     if (selected != null) for (MediaEntry e : heroes) if (e.key.equals(selected.key)) retained = e;
     if (mediaRail.hasFocus() && selected != null)
@@ -550,14 +529,12 @@ public final class ElppaHomeActivity extends Activity {
           repository.permitted()
               ? "Your apps. Your shows. One place to begin."
               : "Bring the shows from your apps onto Home.");
-      action.setText(
-          repository.permitted() ? R.string.elppa_all_apps : R.string.elppa_content_access);
+      action.setContentDescription(getString(R.string.elppa_content_access));
     }
     if (getCurrentFocus() == null && initialFocus) appsRail.focusLast();
   }
 
   private void showHero(MediaEntry entry) {
-    boolean changed = selected == null || !selected.key.equals(entry.key);
     selected = entry;
     title.setText(entry.title);
     String detail =
@@ -568,24 +545,15 @@ public final class ElppaHomeActivity extends Activity {
     else if (entry.watchType == 2) detail += " · New";
     else if (entry.watchType == 3) detail += " · Watchlist";
     subtitle.setText(detail);
-    action.setText(
+    action.setContentDescription(
         entry.source.equals("demo")
             ? "About this preview"
-            : entry.hasProgress()
-                ? getString(R.string.elppa_continue)
-                : "Open in " + sourceName(entry.source));
-    action.setMaxLines(1);
-    action.setEllipsize(TextUtils.TruncateAt.END);
-    if (changed || backdrop.getDrawable() == null) loadHeroArt(entry);
+            : "Play " + entry.title + " in " + sourceName(entry.source));
+    loadHeroArt(entry);
   }
 
   private void loadHeroArt(MediaEntry entry) {
-    artwork.loadHero(
-        backdrop,
-        entry.heroArt(),
-        Math.min(1920, Math.max(960, root.getWidth())),
-        Math.min(1080, Math.max(540, root.getHeight())),
-        preferences.motion());
+    artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
   }
 
   private void activateHero() {
@@ -635,7 +603,7 @@ public final class ElppaHomeActivity extends Activity {
       refresh();
       return;
     }
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle(R.string.elppa_content_access)
         .setMessage(R.string.elppa_access_explanation)
         .setPositiveButton(
@@ -663,7 +631,7 @@ public final class ElppaHomeActivity extends Activity {
       play(e);
       return;
     }
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle(e.title)
         .setItems(
             new String[] {"Open in " + sourceName(e.source), "Dismiss from this Home"},
@@ -686,28 +654,17 @@ public final class ElppaHomeActivity extends Activity {
       message("All apps", "No launchable apps were found.");
       return;
     }
-    AlertDialog dialog =
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.elppa_all_apps)
-            .setItems(labels, (d, w) -> launchApp(all.get(w)))
-            .setNegativeButton("Close", null)
-            .create();
-    dialog.setOnShowListener(
-        d ->
-            dialog
-                .getListView()
-                .setOnItemLongClickListener(
-                    (parent, v, pos, id) -> {
-                      dialog.dismiss();
-                      appMenu(all.get(pos));
-                      return true;
-                    }));
-    dialog.show();
+    new HomePanel.Builder(this)
+        .setTitle(R.string.elppa_all_apps)
+        .setItems(labels, (d, w) -> launchApp(all.get(w)))
+        .setLongClick(pos -> appMenu(all.get(pos)))
+        .setNegativeButton("Close", null)
+        .show();
   }
 
   private void appMenu(AppCatalog.App app) {
     boolean hidden = preferences.hiddenApps().contains(app.pkg);
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle(app.label)
         .setItems(
             new String[] {
@@ -749,72 +706,60 @@ public final class ElppaHomeActivity extends Activity {
   }
 
   private void showSettings() {
-    String[] labels = {
-      "TV settings",
-      "Content access",
-      "Recommendation sources",
-      "All apps",
-      "Refresh content",
-      "Content diagnostics",
-      "Preview mode: " + (preferences.demo() ? "On" : "Off"),
-      "Animations: " + (preferences.motion() ? "On" : "Off"),
-      "Rotate featured shows: " + (preferences.rotate() ? "On" : "Off"),
-      "Restore dismissed titles",
-      "Clear artwork cache",
-      "Choose default Home"
-    };
-    new AlertDialog.Builder(this)
-        .setTitle("elppA TV")
-        .setItems(
-            labels,
-            (d, w) -> {
-              switch (w) {
-                case 0:
-                  open(SystemSettings.intent(this, Settings.ACTION_SETTINGS));
-                  break;
-                case 1:
-                  requestContent();
-                  break;
-                case 2:
-                  showSources();
-                  break;
-                case 3:
-                  showAllApps();
-                  break;
-                case 4:
-                  refresh();
-                  break;
-                case 5:
-                  showDiagnostics();
-                  break;
-                case 6:
-                  preferences.toggle("demo", !preferences.demo());
-                  selected = null;
-                  render();
-                  break;
-                case 7:
-                  preferences.toggle("motion", !preferences.motion());
-                  break;
-                case 8:
-                  preferences.toggle("rotate", !preferences.rotate());
-                  break;
-                case 9:
-                  preferences.clearDismissed();
-                  render();
-                  break;
-                case 10:
-                  artwork.clear();
-                  selected = null;
-                  render();
-                  break;
-                case 11:
-                  open(new Intent(Settings.ACTION_HOME_SETTINGS));
-                  break;
-                default:
-                  break;
-              }
+    new HomePanel.Builder(this)
+        .setTitle("Settings")
+        .section("Home")
+        .toggle(
+            "Animations",
+            "Gentle movement when you choose a card",
+            preferences.motion(),
+            on -> preferences.toggle("motion", on))
+        .toggle(
+            "Rotate featured shows",
+            "Change the backdrop while browsing apps",
+            preferences.rotate(),
+            on -> preferences.toggle("rotate", on))
+        .row("Recommendation sources", "Choose which apps appear on Home", this::showSources)
+        .row("All apps", "Open or organise your installed apps", this::showAllApps)
+        .section("Device")
+        .row(
+            "TV settings",
+            "Picture, sound, remotes and system settings",
+            () -> open(SystemSettings.intent(this, Settings.ACTION_SETTINGS)))
+        .row("Inputs", "Open your device’s input menu", this::showInputs)
+        .row("Content access", "Allow apps to share titles with this Home", this::requestContent)
+        .section("Manage content")
+        .row("Refresh content", "Check for newly shared titles", this::refresh)
+        .row(
+            "Restore dismissed titles",
+            "Bring back titles hidden from Home",
+            () -> {
+              preferences.clearDismissed();
+              render();
             })
-        .setNegativeButton("Close", null)
+        .row(
+            "Clear artwork cache",
+            "Download fresh artwork from your apps",
+            () -> {
+              artwork.clear();
+              selected = null;
+              render();
+            })
+        .row("Content diagnostics", "Provider coverage and artwork quality", this::showDiagnostics)
+        .toggle(
+            "Preview mode",
+            "Use labelled sample content for layout testing",
+            preferences.demo(),
+            on -> {
+              preferences.toggle("demo", on);
+              selected = null;
+              render();
+            })
+        .row(
+            "Default Home",
+            "Choose your home screen",
+            () -> open(new Intent(Settings.ACTION_HOME_SETTINGS)))
+        .setNegativeButton("Done", null)
         .show();
   }
 
@@ -834,7 +779,7 @@ public final class ElppaHomeActivity extends Activity {
       labels[i] = sourceName(keys.get(i));
       checked[i] = !excluded.contains(keys.get(i));
     }
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle("Show content from")
         .setMultiChoiceItems(
             labels,
@@ -866,6 +811,7 @@ public final class ElppaHomeActivity extends Activity {
             .append(packageState("com.google.android.katniss"))
             .append("\nTV Remote Service: ")
             .append(packageState("com.google.android.tv.remote.service"));
+    text.append("\nArtwork: ").append(artwork.heroQuality());
     if (snapshot != null) {
       text.append("\nChecked: ")
           .append(
@@ -887,7 +833,7 @@ public final class ElppaHomeActivity extends Activity {
         "\n\n"
             + "An empty result does not prove an app has no history; it may not publish readable"
             + " rows. Physical mic and phone-remote operation must be tested on the TV.");
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle("Content diagnostics")
         .setMessage(text)
         .setPositiveButton("Refresh", (d, w) -> refresh())
@@ -919,7 +865,7 @@ public final class ElppaHomeActivity extends Activity {
     String[] names = new String[entries.size()];
     for (int i = 0; i < names.length; i++)
       names[i] = String.valueOf(entries.get(i).loadLabel(this));
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle("TV inputs")
         .setItems(
             names,
@@ -940,10 +886,7 @@ public final class ElppaHomeActivity extends Activity {
         manager == null ? null : manager.getNetworkCapabilities(manager.getActiveNetwork());
     boolean online =
         caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-    network.setImageResource(
-        caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-            ? R.drawable.ic_ethernet
-            : R.drawable.ic_wifi);
+    network.setImageResource(R.drawable.ic_wifi);
     network.setImageAlpha(online ? 255 : 128);
     network.setContentDescription(
         online
@@ -962,7 +905,7 @@ public final class ElppaHomeActivity extends Activity {
   }
 
   private void message(String heading, String body) {
-    new AlertDialog.Builder(this)
+    new HomePanel.Builder(this)
         .setTitle(heading)
         .setMessage(body)
         .setPositiveButton("OK", null)

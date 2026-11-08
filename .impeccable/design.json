@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T16:18:00.664266+00:00",
-  "title": "Design System: elppA TV",
+  "generatedAt": "2026-11-08T18:53:18.425840+00:00",
+  "title": "elppA TV \u2014 cinematic Home 0.2.0",
   "extensions": {
     "colorMeta": {
       "text": {
@@ -172,30 +172,26 @@
     },
     "typographyMeta": {
       "display": {
-        "displayName": "Hero title",
-        "purpose": "Two-line native auto-size title. Frontmatter size is the reference preferred size, not a fixed rendered size."
-      },
-      "body": {
-        "displayName": "Supporting text",
-        "purpose": "Subtitle, Next pick and card fallback; native font-scale fitting differs by role."
+        "displayName": "Featured title",
+        "purpose": "Preferred36; minimum26 logical units; provider text when no title logo exists."
       }
     },
     "shadows": [],
     "motion": [
       {
-        "name": "focus-scale",
-        "value": "1.035; 130ms; Android default interpolator",
-        "purpose": "Visible native focus; snaps when app/system animation is disabled."
+        "name": "card-focus",
+        "value": "1.055 scale, -2 logical unit lift, 180ms decelerate",
+        "purpose": "Remote focus; instantaneous with reduced motion."
       },
       {
         "name": "hero-crossfade",
-        "value": "250ms TransitionDrawable",
-        "purpose": "Crossfade a new hero over an existing image, including explicit media selection."
+        "value": "250ms",
+        "purpose": "Still-image replacement."
       },
       {
-        "name": "featured-rotation",
+        "name": "hero-rotation",
         "value": "15000ms",
-        "purpose": "Separate opt-out rotation while Home is active and focused on the app dock."
+        "purpose": "Only visible focused Home with app dock focused."
       }
     ],
     "breakpoints": [
@@ -212,8 +208,8 @@
         "unit": "logical pixel at viewportScale=1 and fontScale=1"
       },
       "viewportScale": "min(width/960, height/540), centred canvas",
-      "typeScale": "logical * viewportScale * min(fontScale, 1.5), except title/subtitle uniform auto-size maximum uses uncapped fontScale",
-      "focusStroke": "2 device pixels",
+      "typeScale": "Logical canvas \u00d7 viewport scale \u00d7 min(fontScale,1.5); hero/subtitle/caption auto-fit.",
+      "focusStroke": "1 logical unit tinted edge plus bounded geometric falloff, focused cards only",
       "focusTarget": "D-pad remote; no runtime hover state",
       "scrims": {
         "leftToRightAndroidArgb": [
@@ -228,60 +224,14 @@
           "0xFF090B10"
         ]
       },
-      "previewMode": "Opt-in, false by default; Preview \u00b7 sample content label; sample action opens explanation only",
+      "previewMode": "Opt-in sample content; no fictional watch history is presented as real.",
       "specimenLimit": "HTML/CSS are reference-scale translations for the design panel, not app code or native verification. Browser font fallback and hover are panel-only affordances. Native screenshots and physical Sony tests remain pending.",
-      "notCanonized": [
-        "Literal initial control radii versus scaled focus radii",
-        "Literal empty-message padding",
-        "Fixed device-pixel stroke requires device review"
-      ],
-      "validation": "0.1.0 automated results are in docs/elppa/QA.md. User supplied an emulator capture; 0.1.1 native recapture and physical Mi Box/Sony acceptance remain pending."
+      "validation": "0.2.0 native recapture and hardware acceptance pending; see docs/elppa/QA.md."
     }
   },
-  "components": [
-    {
-      "name": "Hero action",
-      "kind": "button",
-      "refersTo": "hero-action",
-      "description": "Reference-scale specimen of the native explicit action; actual font comes from the bundled Android resource.",
-      "html": "<button class=\"ds-control ds-hero-action\">Continue</button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-hero-action{width:192px;height:40px;font-size:14px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
-    },
-    {
-      "name": "Next pick",
-      "kind": "button",
-      "refersTo": "next-pick",
-      "description": "Manual featured-title change, visible only when more than one recommendation exists.",
-      "html": "<button class=\"ds-control ds-next-pick\">Next pick</button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-next-pick{width:112px;height:40px;font-size:13px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
-    },
-    {
-      "name": "Network control",
-      "kind": "nav",
-      "refersTo": "icon-control",
-      "description": "Native vector utility button. Browser specimen models focus only; it does not indicate real connectivity.",
-      "html": "<button class=\"ds-control ds-network\" aria-label=\"Network settings\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"#fff\" d=\"M1,9l2,2c4.97,-4.97 13.03,-4.97 18,0l2,-2C16.93,2.93 7.08,2.93 1,9zM9,17l3,3 3,-3c-1.65,-1.66 -4.34,-1.66 -6,0zM5,13l2,2c2.76,-2.76 7.24,-2.76 10,0l2,-2C15.14,9.14 8.87,9.14 5,13z\"/></svg></button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-network{width:42px;height:42px;padding:10px;border-radius:24px;background:#292d3544}.ds-network svg{width:22px;height:22px}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
-    },
-    {
-      "name": "All apps tile",
-      "kind": "card",
-      "refersTo": "app-card",
-      "description": "Representative app dock tile; the icon uses the shipped vector path and the caption appears on focus.",
-      "html": "<button class=\"ds-control ds-app\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"#fff\" d=\"M4,4h4v4H4zM10,4h4v4h-4zM16,4h4v4h-4zM4,10h4v4H4zM10,10h4v4h-4zM16,10h4v4h-4zM4,16h4v4H4zM10,16h4v4h-4zM16,16h4v4h-4z\"/></svg><span>All apps</span></button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-app{position:relative;width:144px;height:86px;border-radius:10px;background:#191d25;padding:0}.ds-app svg{position:absolute;width:41px;height:41px;top:12px;left:37.5px}.ds-app span{position:absolute;bottom:0;left:8px;width:100px;height:19px;font-size:10.5px;text-align:left;visibility:hidden}.ds-app:hover span,.ds-app:focus-visible span{visibility:visible}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
-    },
-    {
-      "name": "Media fallback tile",
-      "kind": "card",
-      "refersTo": "media-card",
-      "description": "Native no-art fallback specimen; sample label is illustrative and does not imply published history.",
-      "html": "<button class=\"ds-control ds-media\" aria-label=\"Beyond the horizon, Preview, Sample title\"><span class=\"ds-fallback\">Beyond the horizon</span><span class=\"ds-caption\">Beyond the horizon \u00b7 Preview</span><span class=\"ds-progress\"></span></button>",
-      "css": ".ds-control{border:0;color:#f4f2ef;background:#34384077;font-family:Outfit,sans-serif;font-weight:400;border-radius:22px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.ds-media{position:relative;width:172px;height:97px;border-radius:10px;background:#191d25;padding:0;white-space:normal}.ds-fallback{position:absolute;left:12px;top:12px;width:148px;height:73px;display:flex;align-items:center;justify-content:center;font-size:13px}.ds-caption{position:absolute;bottom:5px;left:8px;width:148px;height:19px;padding:0 4px;font-size:10px;background:#090b10dd;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;visibility:hidden;text-align:left}.ds-media:hover .ds-caption,.ds-media:focus-visible .ds-caption{visibility:visible}.ds-progress{position:absolute;left:6px;bottom:3px;width:56px;height:2px;background:#f4f2ef}.ds-control:hover,.ds-control:focus-visible{background:#353943cc;outline:2px solid #f4f2ef;transform:scale(1.035)}.ds-control:active{background:#353943cc}.ds-control{transition:transform 130ms}@media(prefers-reduced-motion:reduce){.ds-control{transition:none}}"
-    }
-  ],
+  "components": [],
   "narrative": {
-    "northStar": "Cinematic Home",
+    "northStar": "Match the owner\u2019s second reference: cinematic artwork, two utility icons, clean app cards, below-card movie captions and soft focus lighting.",
     "overview": "The supplied cinematic Apple-TV-like mockup remains the visual authority: landscape artwork fills the television, a left/bottom scrim carries readable text, and horizontal app and media rails keep the next action close. This is a remote-first native Android TV surface for the Sony KD-50X75, viewed from a sofa.\n\nWarm-white Outfit text, charcoal surfaces and restrained focus feedback let provider artwork supply the colour. Native Android dialogs handle occasional settings and recovery tasks. This document records the implemented source; it does not establish visual acceptance or certify the Sony device.",
     "keyCharacteristics": [
       "Full-bleed still artwork with left and bottom scrims.",
@@ -315,11 +265,10 @@
       "Do leave physical microphone, phone remote, TV inputs and Sony settings with their platform services."
     ],
     "donts": [
-      "Don't use Space Grotesk, decorative eyebrows, neon glow or realtime blur.",
-      "Don't replace the horizontal shelf with a portrait poster grid.",
-      "Don't present app-published recommendations as Google's personalised feed or universal OTT history.",
-      "Don't infer Sony device compatibility, physical remote success, readability or performance from a successful build or emulator run.",
-      "Don't copy the literal-pixel inconsistencies noted below into new components."
+      "Do not replace source-art limitations with claims of restored detail.",
+      "Do not add runtime blur, background video or perpetual glow animation.",
+      "Do not show app names or movie captions inside loaded card artwork.",
+      "Do not infer device acceptance from build success."
     ]
   }
 }

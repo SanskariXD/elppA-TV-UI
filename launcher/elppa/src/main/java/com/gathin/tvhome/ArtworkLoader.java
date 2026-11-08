@@ -59,14 +59,97 @@ final class ArtworkLoader {
     load(target, uri, width, height, false, false);
   }
 
-  void loadHero(ImageView target, String uri, int width, int height, boolean motion) {
-    load(
-        target,
-        uri,
-        width,
-        height,
-        true,
-        motion && android.animation.ValueAnimator.areAnimatorsEnabled());
+  private String displayedHeroKey;
+  private volatile boolean clearPending;
+  private volatile String heroQuality = "No featured image loaded";
+
+  String heroQuality() {
+    return heroQuality;
+  }
+
+  void loadHero(ImageView target, String thumbnail, String poster, boolean motion) {
+    final String key = "hero-v2:" + thumbnail + "|" + poster;
+    if (key.equals(displayedHeroKey) && target.getDrawable() != null) {
+      target.setTag(key);
+      return;
+    }
+    target.setTag(key);
+    int ticket = generation.get();
+    workers.execute(
+        () -> {
+          if (ticket != generation.get()) return;
+          String best = thumbnail;
+          int[] chosen = dimensions(thumbnail);
+          if (!poster.equals(thumbnail)) {
+            int[] alternative = dimensions(poster);
+            if (ArtworkSizing.heroScore(alternative[0], alternative[1])
+                > ArtworkSizing.heroScore(chosen[0], chosen[1])) {
+              best = poster;
+              chosen = alternative;
+            }
+          }
+          Bitmap bitmap = memory.get("hero:" + best);
+          if (bitmap == null) {
+            bitmap = read(best, 1920, 1080);
+            if (bitmap == null) {
+              best = best.equals(thumbnail) ? poster : thumbnail;
+              chosen = dimensions(best);
+              bitmap = read(best, 1920, 1080);
+            }
+            if (ticket != generation.get()) return;
+            if (bitmap != null) memory.put("hero:" + best, bitmap);
+          }
+          final Bitmap result = bitmap;
+          final String quality =
+              bitmap == null
+                  ? "Image unavailable"
+                  : "Source "
+                      + chosen[0]
+                      + " × "
+                      + chosen[1]
+                      + " · decoded "
+                      + bitmap.getWidth()
+                      + " × "
+                      + bitmap.getHeight()
+                      + (chosen[0] < 1280 || chosen[1] < 720
+                          ? " · App supplied a small image"
+                          : "");
+          main.post(
+              () -> {
+                if (ticket != generation.get() || !key.equals(target.getTag())) return;
+                heroQuality = quality;
+                displayedHeroKey = result == null ? null : key;
+                if (result == null) target.setImageDrawable(null);
+                else
+                  bind(
+                      target,
+                      result,
+                      motion && android.animation.ValueAnimator.areAnimatorsEnabled());
+              });
+        });
+  }
+
+  private int[] dimensions(String address) {
+    if (address == null || address.isEmpty()) return new int[] {0, 0};
+    try {
+      Uri uri = Uri.parse(address);
+      InputStream input;
+      if ("https".equals(uri.getScheme())) {
+        File file = cachedFile(address);
+        if (file == null) return new int[] {0, 0};
+        input = new FileInputStream(file);
+      } else if ("content".equals(uri.getScheme()) || "android.resource".equals(uri.getScheme())) {
+        input = context.getContentResolver().openInputStream(uri);
+      } else return new int[] {0, 0};
+      try (InputStream close = input) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeStream(close, null, options);
+        return new int[] {options.outWidth, options.outHeight};
+      }
+    } catch (Exception ignored) {
+      return new int[] {0, 0};
+    }
   }
 
   private void load(
@@ -105,12 +188,18 @@ final class ArtworkLoader {
     }
     if (motion && old != null) {
       TransitionDrawable transition =
-          new TransitionDrawable(
-              new Drawable[] {old, new BitmapDrawable(context.getResources(), bitmap)});
+          new TransitionDrawable(new Drawable[] {old, drawable(bitmap)});
       transition.setCrossFadeEnabled(true);
       target.setImageDrawable(transition);
       transition.startTransition(250);
-    } else target.setImageBitmap(bitmap);
+    } else target.setImageDrawable(drawable(bitmap));
+  }
+
+  private Drawable drawable(Bitmap bitmap) {
+    BitmapDrawable drawable = new BitmapDrawable(context.getResources(), bitmap);
+    drawable.setFilterBitmap(true);
+    drawable.setDither(true);
+    return drawable;
   }
 
   private Bitmap read(String address, int width, int height) {
@@ -123,7 +212,7 @@ final class ArtworkLoader {
           BitmapFactory.Options options = bounds(first, width, height);
           if (options == null) return null;
           try (InputStream second = new FileInputStream(file)) {
-            return BitmapFactory.decodeStream(second, null, options);
+            return decode(second, options, width, height);
           }
         }
       }
@@ -133,7 +222,7 @@ final class ArtworkLoader {
         BitmapFactory.Options options = bounds(first, width, height);
         if (options == null) return null;
         try (InputStream second = context.getContentResolver().openInputStream(uri)) {
-          return BitmapFactory.decodeStream(second, null, options);
+          return decode(second, options, width, height);
         }
       }
     } catch (Exception | OutOfMemoryError ignored) {
@@ -149,16 +238,36 @@ final class ArtworkLoader {
     if (o.outWidth <= 0 || o.outHeight <= 0 || (long) o.outWidth * o.outHeight > 40_000_000L)
       return null;
     int limitW = Math.min(1920, Math.max(96, width)), limitH = Math.min(1080, Math.max(54, height));
-    int sample = 1;
-    // Cap decoded pixels, including unusually tall portrait posters used as hero fallbacks.
-    while (o.outWidth / sample > limitW * 1.5 || o.outHeight / sample > limitH * 1.5) sample *= 2;
     o.inJustDecodeBounds = false;
-    o.inSampleSize = sample;
+    o.inSampleSize = ArtworkSizing.sample(o.outWidth, o.outHeight, limitW, limitH);
+    o.inScaled = false;
     o.inPreferredConfig = Bitmap.Config.ARGB_8888;
     return o;
   }
 
+  private static Bitmap decode(
+      InputStream input, BitmapFactory.Options options, int width, int height) {
+    Bitmap decoded = BitmapFactory.decodeStream(input, null, options);
+    if (decoded == null) return null;
+    float ratio =
+        Math.min(
+            1f,
+            Math.min(
+                Math.min(width, 1920f) / decoded.getWidth(),
+                Math.min(height, 1080f) / decoded.getHeight()));
+    if (ratio >= 1) return decoded;
+    Bitmap resized =
+        Bitmap.createScaledBitmap(
+            decoded,
+            Math.max(1, Math.round(decoded.getWidth() * ratio)),
+            Math.max(1, Math.round(decoded.getHeight() * ratio)),
+            true);
+    if (resized != decoded) decoded.recycle();
+    return resized;
+  }
+
   private synchronized File cachedFile(String address) throws Exception {
+    clearDiskIfRequested();
     StringBuilder hash = new StringBuilder();
     for (byte b :
         MessageDigest.getInstance("SHA-256")
@@ -239,14 +348,18 @@ final class ArtworkLoader {
 
   void clear() {
     pause();
+    displayedHeroKey = null;
+    heroQuality = "Artwork cache cleared";
     trim();
-    workers.execute(
-        () -> {
-          synchronized (this) {
-            File[] files = directory.listFiles();
-            if (files != null) for (File f : files) f.delete();
-          }
-        });
+    clearPending = true;
+    workers.execute(this::clearDiskIfRequested);
+  }
+
+  private synchronized void clearDiskIfRequested() {
+    if (!clearPending) return;
+    File[] files = directory.listFiles();
+    if (files != null) for (File f : files) f.delete();
+    clearPending = false;
   }
 
   void close() {
