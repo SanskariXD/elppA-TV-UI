@@ -10,29 +10,31 @@ import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 
-/** Small static light falloff. No blur pass, bitmap, timer or software rendering layer. */
+/** Diffuse focus light, without a sharp outline, a blur pass or a rendering layer. */
 final class FocusGlow extends Drawable {
-  private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
   private final RectF rect = new RectF();
   private final float radius, unit;
   private final boolean focused;
-  private Shader edge;
+  private final int surface;
+  private Shader light;
 
-  FocusGlow(float radius, float unit, boolean focused) {
+  FocusGlow(float radius, float unit, boolean focused, int surface) {
     this.radius = radius;
     this.unit = unit;
     this.focused = focused;
+    this.surface = surface;
   }
 
   @Override
   protected void onBoundsChange(Rect bounds) {
-    edge =
+    light =
         new LinearGradient(
             bounds.left,
             bounds.top,
             bounds.right,
             bounds.bottom,
-            new int[] {0xFFE3F5F5, 0xFF8BB8BD, 0xFFA7A4C4, 0xFFCCA99D},
+            new int[] {0xFFBED9DA, 0xFF78A7AA, 0xFFA6A5BE, 0xFFC19B8E},
             null,
             Shader.TileMode.CLAMP);
   }
@@ -40,28 +42,20 @@ final class FocusGlow extends Drawable {
   @Override
   public void draw(Canvas canvas) {
     rect.set(getBounds());
-    paint.setShader(null);
     if (focused) {
       paint.setStyle(Paint.Style.STROKE);
-      paint.setColor(0xFFB9DADB);
-      for (int i = 8; i >= 1; i--) {
-        paint.setAlpha(2 + (8 - i) * 2);
-        paint.setStrokeWidth(i * 2 * unit);
+      paint.setShader(light);
+      // Nested broad, low-opacity strokes form a soft falloff. Deliberately no final 1px rim.
+      for (int i = 12; i >= 1; i--) {
+        paint.setAlpha(4 + (12 - i) / 3);
+        paint.setStrokeWidth((2 + i * 2) * unit);
         canvas.drawRoundRect(rect, radius, radius, paint);
       }
     }
     paint.setShader(null);
     paint.setStyle(Paint.Style.FILL);
-    paint.setColor(ElppaUi.SURFACE);
+    paint.setColor(surface);
     canvas.drawRoundRect(rect, radius, radius, paint);
-    if (focused) {
-      paint.setStyle(Paint.Style.STROKE);
-      paint.setAlpha(230);
-      paint.setStrokeWidth(Math.max(1, unit));
-      paint.setShader(edge);
-      canvas.drawRoundRect(rect, radius, radius, paint);
-      paint.setShader(null);
-    }
   }
 
   @Override

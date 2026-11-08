@@ -11,16 +11,18 @@ remote main before editing; preserve user changes. No upstream PRs or new branch
 - Current test device: Xiaomi Mi Box, model and Android version not yet verified.
 - Final device: original Sony KD-50X75 (2021). Do not assume X75K/Google TV.
 - Visual target: cinematic background, horizontal app dock, horizontal Watch Next shelf.
-  Preserve Outfit, clear remote focus, no video/blur/background polling.
-- 0.2.0 implements the owner's reference: Wi-Fi/Settings only, icon-only play,
+  Preserve Outfit and clear remote focus; no video, full-screen blur or background polling.
+- 0.3.0 extends the owner's reference: Wi-Fi/Settings only, icon-only play,
   clean app tiles, movie captions below focus, subtle illuminated focus, grouped settings
-  side panel, and better selection/decoding of app artwork. See DESIGN.md.
+  side panel, wide 16:9 media, larger uncropped app logos, diffuse glass focus, cached
+  frosted play, and optional TMDB title logos/backdrops. See DESIGN.md.
 - Preview mode is labelled sample content, not actual movies. Never fill the dock with
-  fake installed OTT apps. Native capture of 0.2.0 is still required.
+  fake installed OTT apps. Native capture of 0.3.0 is still required.
 - **Open Phase 1 requirement:** top-rated + relevant recommended movie hero feed.
-  Current hero uses app preview rows, then Watch Next; no ratings ranking or TMDB integration.
-  Implement an authenticated catalogue source separately from app watch history. Agree the
-  provider/credential provisioning before relying on it; never commit tokens or invent entitlement.
+  Current hero uses app preview rows, then Watch Next. Optional TMDB artwork enrichment
+  replaces images and adds title logos; it does not rank or choose recommendations.
+  Implement catalogue ranking separately from app watch history; never commit tokens
+  or invent entitlement.
 
 ## Windows build
 
@@ -63,3 +65,21 @@ Do not run cleanup scripts or alter Assistant, Remote Service, Cast or TV provid
 
 Build success is not visual acceptance. Mi Box success is not Sony acceptance.
 Do not report the catalogue feed, subscriptions or universal Continue Watching as working.
+
+
+## Movie artwork connection (0.3.0)
+
+In the launcher open Settings → Movie artwork → Connect TMDB. Use the owner's API Read
+Access Token from https://www.themoviedb.org/settings/api (not the shorter v3 key).
+Enter privately via TV keyboard/phone remote. Do not ask the owner to paste the token
+into chat, logs, shell history or a tracked file. The app validates it before storing it
+with Android Keystore. This workspace did not have a token for live API acceptance.
+
+Connected mode defaults to neutral fallback if a title cannot be matched or lacks a
+suitable backdrop. “Allow app artwork as fallback” may bring back branded thumbnails.
+Original OTT app links still handle playback. Catalogue artwork is not a top-rated
+recommendation engine; ranking of recommendations remains the separate open requirement.
+
+Capture real Home and Settings after installation, test rapid selection/Back/offline,
+and verify the correct movie logo appears with the correct title. Do not claim a clean
+image or logo exists for every recommendation.

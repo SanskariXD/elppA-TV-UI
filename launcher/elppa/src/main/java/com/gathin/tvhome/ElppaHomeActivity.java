@@ -46,6 +46,17 @@ public final class ElppaHomeActivity extends Activity {
   private final Handler main = new Handler(Looper.getMainLooper());
   private final ExecutorService dataWorker = Executors.newSingleThreadExecutor();
   private final Map<String, String> sourceNames = new HashMap<>();
+  private final ExecutorService catalogueWorker = Executors.newSingleThreadExecutor();
+  private CatalogueArtwork catalogue;
+  private ArtworkCredentials credentials;
+  private Runnable resolveArtworkSoon;
+  private CancellationSignal artworkSignal;
+  private Future<?> artworkTask;
+  private HomePanel artworkProgress;
+  private String artworkRequestKey = "", catalogueStatus = "Connect movie artwork in Settings";
+  private int artworkGeneration;
+  private android.graphics.Bitmap playFrost;
+  private boolean heroLogoVisible;
   private HomePreferences preferences;
   private ArtworkLoader artwork;
   private TvContentRepository repository;
@@ -56,7 +67,7 @@ public final class ElppaHomeActivity extends Activity {
   private boolean active, observing, initialFocus;
   private boolean loading = true;
   private FrameLayout root;
-  private ImageView backdrop, network, settings, action;
+  private ImageView backdrop, network, settings, action, titleLogo;
   private TextClock clock;
   private TextView title, subtitle, empty, status;
   private HomeRail appsRail, mediaRail;
@@ -109,6 +120,8 @@ public final class ElppaHomeActivity extends Activity {
     preferences = new HomePreferences(this);
     artwork = new ArtworkLoader(this);
     repository = new TvContentRepository(this);
+    catalogue = new CatalogueArtwork(this);
+    credentials = new ArtworkCredentials(this);
     getWindow()
         .setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -119,6 +132,11 @@ public final class ElppaHomeActivity extends Activity {
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     buildScreen();
+    artwork.setHeroListener(
+        frost -> {
+          playFrost = frost;
+          stylePlay();
+        });
     render();
   }
 
@@ -160,12 +178,29 @@ public final class ElppaHomeActivity extends Activity {
     title.setGravity(Gravity.BOTTOM);
     title.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(title);
+    titleLogo = new ImageView(this);
+    titleLogo.setScaleType(ImageView.ScaleType.FIT_START);
+    titleLogo.setVisibility(View.GONE);
+    titleLogo.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+    root.addView(titleLogo);
     subtitle = ElppaUi.text(this, 14);
     subtitle.setTextColor(ElppaUi.MUTED);
     subtitle.setMaxLines(2);
     subtitle.setEllipsize(TextUtils.TruncateAt.END);
     root.addView(subtitle);
     action = icon(R.drawable.elppa_play, R.string.elppa_continue, this::activateHero);
+    action.setOnFocusChangeListener(
+        (view, on) -> {
+          stylePlay();
+          view.animate().cancel();
+          float zoom = on ? 1.045f : 1f;
+          if (preferences.motion() && android.animation.ValueAnimator.areAnimatorsEnabled())
+            view.animate().scaleX(zoom).scaleY(zoom).setDuration(180).start();
+          else {
+            view.setScaleX(zoom);
+            view.setScaleY(zoom);
+          }
+        });
     action.setOnKeyListener(
         (v, key, event) -> {
           if (key == KeyEvent.KEYCODE_DPAD_DOWN || key == KeyEvent.KEYCODE_DPAD_UP) {
@@ -208,6 +243,11 @@ public final class ElppaHomeActivity extends Activity {
               }
 
               @Override
+              public boolean reducedGlass() {
+                return preferences.reducedGlass();
+              }
+
+              @Override
               public boolean motion() {
                 return preferences.motion();
               }
@@ -242,6 +282,11 @@ public final class ElppaHomeActivity extends Activity {
               @Override
               public void vertical(boolean up) {
                 if (up) appsRail.focusLast();
+              }
+
+              @Override
+              public boolean reducedGlass() {
+                return preferences.reducedGlass();
               }
 
               @Override
@@ -332,15 +377,16 @@ public final class ElppaHomeActivity extends Activity {
     place(title, 48, largeText ? 76 : 94, 450, largeText ? 96 : 78);
     ElppaUi.type(title, 36, scale);
     fitText(title, 26, 36);
-    place(subtitle, 50, 182, 440, 28);
+    place(titleLogo, 48, 84, 370, 100);
+    place(subtitle, 50, 190, 440, 24);
     ElppaUi.type(subtitle, 12, scale);
     fitText(subtitle, 11, 12);
     place(action, 50, 220, 88, 36);
     action.setPadding(px(33), px(9), px(33), px(9));
-    action.setBackground(ElppaUi.shape(0x665F5952, px(20), false));
-    place(appsRail, 24, 270, 912, 94);
+    stylePlay();
+    place(appsRail, 24, 264, 912, 112);
     appsRail.scale(scale);
-    place(mediaRail, 24, 366, 912, 146);
+    place(mediaRail, 24, 378, 912, 158);
     mediaRail.scale(scale);
     place(empty, 36, 420, 888, 70);
     ElppaUi.type(empty, 14, scale);
@@ -422,6 +468,8 @@ public final class ElppaHomeActivity extends Activity {
       observing = false;
     }
     unregisterReceiver(packages);
+    cancelCatalogue();
+    artworkRequestKey = "";
     artwork.pause();
     super.onStop();
   }
@@ -429,6 +477,7 @@ public final class ElppaHomeActivity extends Activity {
   @Override
   protected void onDestroy() {
     dataWorker.shutdownNow();
+    catalogueWorker.shutdownNow();
     artwork.close();
     super.onDestroy();
   }
@@ -521,8 +570,12 @@ public final class ElppaHomeActivity extends Activity {
       showHero(retained == null ? heroes.get(Math.floorMod(heroIndex, heroes.size())) : retained);
     else {
       selected = null;
-      backdrop.setTag(null);
-      backdrop.setImageDrawable(null);
+      cancelCatalogue();
+      artworkRequestKey = "";
+      resetLogo();
+      playFrost = null;
+      stylePlay();
+      artwork.clearHero(backdrop);
       title.setText(
           loading && repository.permitted() ? R.string.elppa_loading : R.string.elppa_empty);
       subtitle.setText(
@@ -537,6 +590,7 @@ public final class ElppaHomeActivity extends Activity {
   private void showHero(MediaEntry entry) {
     selected = entry;
     title.setText(entry.title);
+    title.setVisibility(heroLogoVisible ? View.INVISIBLE : View.VISIBLE);
     String detail =
         entry.source.equals("demo")
             ? "Sample artwork · Not available to play"
@@ -552,8 +606,231 @@ public final class ElppaHomeActivity extends Activity {
     loadHeroArt(entry);
   }
 
+  private void stylePlay() {
+    if (action != null)
+      action.setBackground(
+          new FrostedPlayDrawable(playFrost, action.hasFocus(), preferences.reducedGlass()));
+  }
+
+  private void resetLogo() {
+    heroLogoVisible = false;
+    titleLogo.setTag(null);
+    titleLogo.setImageDrawable(null);
+    titleLogo.setVisibility(View.GONE);
+    title.setVisibility(View.VISIBLE);
+  }
+
+  private void cancelCatalogue() {
+    artworkGeneration++;
+    if (resolveArtworkSoon != null) main.removeCallbacks(resolveArtworkSoon);
+    if (artworkSignal != null) artworkSignal.cancel();
+    if (artworkTask != null) artworkTask.cancel(true);
+    if (artworkProgress != null) {
+      HomePanel progress = artworkProgress;
+      artworkProgress = null;
+      progress.dismiss();
+    }
+  }
+
   private void loadHeroArt(MediaEntry entry) {
-    artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
+    if (!active) return;
+    String key = entry.key + "|" + entry.title + "|" + entry.backdrop + "|" + entry.poster;
+    if (key.equals(artworkRequestKey)) return;
+    artworkRequestKey = key;
+    cancelCatalogue();
+    resetLogo();
+    final int ticket = artworkGeneration;
+    if (entry.source.equals("demo") || !credentials.configured()) {
+      catalogueStatus =
+          entry.source.equals("demo")
+              ? "Preview artwork"
+              : "Not connected — provider artwork is shown";
+      artwork.loadHero(backdrop, entry.backdrop, entry.poster, preferences.motion());
+      return;
+    }
+    // Do not show the preceding title or its branded provider art during catalogue matching.
+    artwork.clearHero(backdrop);
+    playFrost = null;
+    stylePlay();
+    catalogueStatus = "Finding movie artwork";
+    artworkSignal = new CancellationSignal();
+    final CancellationSignal signal = artworkSignal;
+    final String token = credentials.token();
+    resolveArtworkSoon =
+        () -> {
+          if (!active || ticket != artworkGeneration || signal.isCanceled()) return;
+          artworkTask =
+              catalogueWorker.submit(
+                  () -> {
+                    CatalogueArtwork.Result result;
+                    try {
+                      result = catalogue.resolve(entry, token, signal);
+                    } catch (android.os.OperationCanceledException ignored) {
+                      return;
+                    } catch (RuntimeException ignored) {
+                      result = CatalogueArtwork.Result.empty("Artwork unavailable");
+                    }
+                    final CatalogueArtwork.Result found = result;
+                    main.post(
+                        () -> {
+                          if (!active
+                              || ticket != artworkGeneration
+                              || signal.isCanceled()
+                              || selected == null
+                              || !selected.key.equals(entry.key)) return;
+                          catalogueStatus = found.status;
+                          if (!found.backdrop.isEmpty())
+                            artwork.loadHero(
+                                backdrop, found.backdrop, found.backdrop, preferences.motion());
+                          else if (preferences.providerFallback())
+                            artwork.loadHero(
+                                backdrop, entry.backdrop, entry.poster, preferences.motion());
+                          if (!found.logo.isEmpty())
+                            artwork.loadLogo(
+                                titleLogo,
+                                found.logo,
+                                () -> {
+                                  if (ticket != artworkGeneration
+                                      || selected == null
+                                      || !selected.key.equals(entry.key)) return;
+                                  heroLogoVisible = true;
+                                  titleLogo.setVisibility(View.VISIBLE);
+                                  title.setVisibility(View.INVISIBLE);
+                                });
+                        });
+                  });
+        };
+    main.postDelayed(resolveArtworkSoon, 180);
+  }
+
+  private void reloadArtwork() {
+    cancelCatalogue();
+    artworkRequestKey = "";
+    resetLogo();
+    if (selected != null) loadHeroArt(selected);
+  }
+
+  private void movieArtworkSettings() {
+    new HomePanel.Builder(this)
+        .setTitle("Movie artwork")
+        .setMessage(
+            credentials.configured()
+                ? "TMDB is connected. Matching titles can use clean backdrops and original title"
+                    + " logos."
+                : "Connect TMDB to get clean movie backdrops and original title logos. The launcher"
+                    + " sends title names to TMDB when resolving artwork.")
+        .row(
+            credentials.configured() ? "Replace access token" : "Connect TMDB",
+            "Use your own API Read Access Token",
+            this::enterArtworkToken)
+        .toggle(
+            "Allow app artwork as fallback",
+            "May include provider badges or lower-resolution images",
+            preferences.providerFallback(),
+            on -> {
+              preferences.toggle("provider_fallback", on);
+              reloadArtwork();
+            })
+        .row("Artwork credits", "The Movie Database", this::artworkCredits)
+        .row(
+            "Disconnect TMDB",
+            "Return to artwork supplied by your apps",
+            () -> {
+              credentials.clear();
+              catalogueWorker.execute(catalogue::clear);
+              reloadArtwork();
+            })
+        .setNegativeButton("Done", null)
+        .show();
+  }
+
+  private void enterArtworkToken() {
+    final String[] value = {""};
+    new HomePanel.Builder(this)
+        .setTitle("Connect TMDB")
+        .setMessage(
+            "Create a developer API token at themoviedb.org/settings/api. Enter the API Read Access"
+                + " Token here using the TV keyboard or phone remote. It is stored encrypted on"
+                + " this device.")
+        .passwordInput(text -> value[0] = text)
+        .setPositiveButton("Connect", (d, w) -> validateArtworkToken(value[0]))
+        .setNegativeButton("Cancel", null)
+        .show();
+  }
+
+  private void validateArtworkToken(String value) {
+    final String token = ArtworkCredentials.normalise(value);
+    if (!token.matches("[A-Za-z0-9._~-]{20,4096}")) {
+      message("Check the token", "Enter the API Read Access Token from your TMDB API settings.");
+      return;
+    }
+    cancelCatalogue();
+    final int ticket = artworkGeneration;
+    artworkSignal = new CancellationSignal();
+    final CancellationSignal signal = artworkSignal;
+    HomePanel progress =
+        new HomePanel.Builder(this)
+            .setTitle("Connecting artwork")
+            .setMessage("Checking your TMDB connection…")
+            .setNegativeButton(
+                "Cancel",
+                (d, w) -> {
+                  cancelCatalogue();
+                  artworkRequestKey = "";
+                })
+            .show();
+    artworkProgress = progress;
+    progress.setOnCancelListener(
+        d -> {
+          cancelCatalogue();
+          artworkRequestKey = "";
+        });
+    artworkTask =
+        catalogueWorker.submit(
+            () -> {
+              String error;
+              try {
+                error = catalogue.validateToken(token, signal);
+              } catch (android.os.OperationCanceledException ignored) {
+                return;
+              } catch (RuntimeException ignored) {
+                error = "Could not connect. Try again.";
+              }
+              final String failure = error;
+              main.post(
+                  () -> {
+                    if (!active || signal.isCanceled() || ticket != artworkGeneration) return;
+                    artworkProgress = null;
+                    progress.dismiss();
+                    if (!failure.isEmpty()) {
+                      message("Artwork connection", failure);
+                      return;
+                    }
+                    if (!credentials.save(token)) {
+                      message(
+                          "Token not saved",
+                          "This device could not store the token securely. Check the token and try"
+                              + " again.");
+                      return;
+                    }
+                    catalogueWorker.execute(catalogue::clear);
+                    reloadArtwork();
+                    movieArtworkSettings();
+                  });
+            });
+  }
+
+  private void artworkCredits() {
+    new HomePanel.Builder(this)
+        .setTitle("Artwork credits")
+        .brand(R.drawable.tmdb_logo)
+        .setMessage(
+            "This product uses the TMDB API but is not endorsed or certified by TMDB.\n\n"
+                + "Movie and TV artwork: The Movie Database (themoviedb.org). Availability varies"
+                + " by title and language.\n\n"
+                + "Playback and your watch history stay with the original streaming app.")
+        .setNegativeButton("Done", null)
+        .show();
   }
 
   private void activateHero() {
@@ -709,6 +986,22 @@ public final class ElppaHomeActivity extends Activity {
     new HomePanel.Builder(this)
         .setTitle("Settings")
         .section("Home")
+        .row(
+            "Movie artwork",
+            credentials.configured()
+                ? "TMDB connected · backdrops and title logos"
+                : "Connect clean backdrops and title logos",
+            this::movieArtworkSettings)
+        .toggle(
+            "Reduce transparency",
+            "Use solid controls and simpler focus lighting",
+            preferences.reducedGlass(),
+            on -> {
+              preferences.toggle("reduced_glass", on);
+              stylePlay();
+              appsRail.refreshAppearance();
+              mediaRail.refreshAppearance();
+            })
         .toggle(
             "Animations",
             "Gentle movement when you choose a card",
@@ -729,7 +1022,13 @@ public final class ElppaHomeActivity extends Activity {
         .row("Inputs", "Open your device’s input menu", this::showInputs)
         .row("Content access", "Allow apps to share titles with this Home", this::requestContent)
         .section("Manage content")
-        .row("Refresh content", "Check for newly shared titles", this::refresh)
+        .row(
+            "Refresh content",
+            "Check for newly shared titles",
+            () -> {
+              artworkRequestKey = "";
+              refresh();
+            })
         .row(
             "Restore dismissed titles",
             "Bring back titles hidden from Home",
@@ -739,9 +1038,13 @@ public final class ElppaHomeActivity extends Activity {
             })
         .row(
             "Clear artwork cache",
-            "Download fresh artwork from your apps",
+            "Download fresh artwork for your titles",
             () -> {
+              cancelCatalogue();
+              artworkRequestKey = "";
+              resetLogo();
               artwork.clear();
+              catalogueWorker.execute(catalogue::clear);
               selected = null;
               render();
             })
@@ -812,6 +1115,7 @@ public final class ElppaHomeActivity extends Activity {
             .append("\nTV Remote Service: ")
             .append(packageState("com.google.android.tv.remote.service"));
     text.append("\nArtwork: ").append(artwork.heroQuality());
+    text.append("\nCatalogue: ").append(catalogueStatus);
     if (snapshot != null) {
       text.append("\nChecked: ")
           .append(

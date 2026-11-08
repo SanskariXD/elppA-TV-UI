@@ -68,3 +68,7 @@ Version 0.1.1 prepares the Xiaomi Mi Box test session. Follow [MIBOX-TEST.md](MI
 ## Cinematic UI revision 0.2.0
 
 The owner supplied a working Mi Box photo. Home and settings are refined toward the cinematic reference; see DESIGN.md and the 0.2.0 entry in [QA.md](QA.md). Fresh native captures and performance checks are still required. The catalogue ranking requirement remains open.
+
+## Catalogue artwork and focus revision 0.3.0
+
+Optional authenticated TMDB title-logo/backdrop enrichment and wide 16:9 cards are implemented. Setup lives in [CATALOGUE-ARTWORK.md](CATALOGUE-ARTWORK.md). Live API/native device acceptance remains pending; metadata ranking/top-rated recommendations remain a separate open requirement.

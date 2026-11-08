@@ -23,6 +23,14 @@ final class HomePreferences {
     return store.getBoolean("motion", true);
   }
 
+  boolean reducedGlass() {
+    return store.getBoolean("reduced_glass", false);
+  }
+
+  boolean providerFallback() {
+    return store.getBoolean("provider_fallback", false);
+  }
+
   boolean rotate() {
     return store.getBoolean("rotate", true);
   }

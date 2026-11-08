@@ -96,3 +96,37 @@ Next device checks: capture Home with app focus, movie focus (caption below), se
 source switches and large text; inspect top and bottom safe areas, rapid D-pad movement,
 Back, physical voice and phone remote. Check diagnostics on a blurry title to distinguish
 small supplied artwork from a decode problem. Keep captures and identifiers out of Git.
+
+
+## 0.3.0 — catalogue logos, clean backdrops and glass focus
+
+User requested parallel research/implementation/review. Three agents covered catalogue
+matching, card/material rendering and independent research/integration review. Root
+integrated optional encrypted credentials, title logos, connection UI and cached frost.
+
+- App cards 152×92 use FIT_CENTER without cropping complete logos. Movie cards 176×99
+  are exact16:9 with focused captions below. No crisp white focus perimeter remains;
+  diffuse light, static gloss and a 200 ms focus lift replace it.
+- The play control uses a real64×32 blurred backdrop sample generated on an image
+  worker, not full-screen/per-frame blur. Reduced motion and transparency are supported.
+- Optional TMDB enrichment uses exact conservative title/type/year matching, neutral
+  language high-resolution backdrop selection and original PNG title logos. Baked-in
+  provider Top10 badges are bypassed by choosing another source; pixels are not erased.
+- Original playback links/provider history remain authoritative. Missing/ambiguous
+  matching or assets default to neutral hero/title after connection; provider fallback
+  is optional. Without a token, app artwork continues to appear.
+- The owner enters their Read Access Token privately in Settings → Movie artwork.
+  It is verified online before encrypted Android Keystore storage. No token is bundled,
+  committed, logged or available in this test workspace. Credits include the approved mark.
+- Review fixed current-title artwork cache refresh and cancelled connection-dialog cleanup.
+
+Release verification: 315 upstream  + 26 elppA unit tests passed (10 new conservative
+matching cases), builds and lint passed with zero errors. Lint warnings: 116 elppA,
+96 upstream. No setup scripts changed; full inherited Python suite not rerun.
+
+Limits: authenticated live TMDB responses, Android Keystore on this Mi Box, keyboard
+entry and native screenshots remain device acceptance work. No successful live feed,
+logo coverage for every title, measured FPS, or final visual match is claimed. Prior
+software emulators were unusable and no TV is connected to this workspace. Test on
+Mi Box before considering Sony compatible. See CATALOGUE-ARTWORK.md and
+ARTWORK-RESEARCH.md for primary sources and setup.

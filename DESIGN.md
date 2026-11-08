@@ -26,7 +26,7 @@ rounded:
   panel: "22px"
 ---
 
-# Cinematic Home — 0.2.0
+# Cinematic Home — 0.3.0
 
 The owner's second reference image is the visual authority. Home is an artwork-led,
 remote-operated surface. Native Java and RecyclerView keep rendering bounded on the
@@ -46,8 +46,8 @@ Backdrop and scrims fill the full window. Outfit is bundled through the shared U
 | Enlarged title | y76, height96; same baseline and auto-sizing |
 | Provider metadata | x50 y182, 440×28; no decorative eyebrow |
 | Play action | x50 y220, 88×36; vector triangle; accessible title/provider label |
-| App dock | x24 y270, 912×94; 104×72 cards, 12-unit total horizontal margin |
-| Media rail | x24 y366, 912×146; 128×104 cards plus reserved caption space |
+| App dock | x24 y264, 912×112; 152×92 cards, 16-unit total horizontal margin |
+| Media rail | x24 y378, 912×158; 176×99 (16:9) cards plus reserved caption space |
 | Empty state | x36 y420, 888×70; access/diagnostics remain reachable |
 
 Next pick and the textual Continue/Open buttons are removed. One icon-only play
@@ -62,14 +62,19 @@ cannot be loaded. Progress remains sourced from app-published playback metadata.
 
 ## Focus and motion
 
-Unfocused cards have no stroke. A focused card uses FocusGlow: a thin white/cyan/lilac/
-warm edge and eight low-opacity geometric strokes for a soft falloff. The user's
-explicit focus-light reference authorises this subtle illumination. No real-time blur,
-software rendering layer, bitmap glow, infinite shimmer or animation loop is added.
+Unfocused and focused cards have no crisp perimeter stroke. FocusGlow draws twelve
+broad low-opacity tinted strokes, ending in a diffuse falloff rather than a final white
+rim. CardReflection adds a fixed diagonal sheen and a soft radial light above artwork.
+App banners use FIT_CENTER with 6-unit insets; square icons use 22. A 16×16 corner sample
+extends the banner's surface colour without cropping the logo. Sampled colours are
+cached per rail; no image sampling runs each frame.
 
-Only the card surface lifts 2 logical units and scales to 1.055 over 180 ms with
-DecelerateInterpolator. The caption remains stationary. App/system reduced-motion
-settings make this instantaneous. Mouse hover enters the same focus state as D-pad.
+The card lifts 3 logical units and scales to 1.045 over 200 ms with a decelerating curve.
+D-pad and mouse hover share focus. Reduced motion snaps these transforms. Reduce
+transparency removes gloss/tinted falloff and uses a solid brighter focus surface.
+The single play button uses a 64×32 crop of the actual backdrop, blurred with two small
+separable box passes on an artwork worker once per hero. A translucent tint and fixed
+sheen finish the surface; no full-screen blur or per-frame sampling is used.
 
 Hero images crossfade for 250 ms when motion is enabled. Auto-rotation remains every
 15 seconds only while Home has window focus and the app dock is focused. Dialogs,
@@ -88,23 +93,37 @@ The same panel styles All apps, app actions, source selection, diagnostics and m
 All apps retains long-press management. Source edits are saved explicitly; cancelling
 leaves the prior source selection intact.
 
-## Artwork quality and performance
+## Catalogue artwork, logos and performance
 
-ArtworkSizing compares both app-provided image candidates using source dimensions,
-with a preference for landscape composition and then usable detail. The loader reads
-headers before deciding, decodes the chosen candidate and falls back if decoding fails.
-Source dimensions are shown in Content diagnostics; no signed URLs are displayed.
+A separate transparent ImageView at x48 y84 (370×100 logical units) displays the real
+movie/show PNG title logo with FIT_START and its original aspect ratio. Plain title text
+remains until an image loads, and returns for missing/ambiguous logos. Logos are not
+redrawn in a lookalike typeface. Watch history, source app and playback URI remain
+from the installed app.
 
-Hero decoding targets at most 1920×1080 even if the window is 720p. Power-of-two sampling
-now avoids falling below the target prematurely, followed by one filtered downscale.
-It never upscales the stored bitmap or rewrites a provider URL. Small provider images
-remain small sources; this cannot reproduce full-resolution studio backdrops or title
-logos when the provider does not share them. A catalogue artwork source is future work.
+Settings → Movie artwork connects an owner-provided TMDB API Read Access Token.
+The app validates it over HTTPS, stores it encrypted with Android Keystore, and includes
+the approved TMDB mark and required notice in Artwork credits. Names of focused/featured
+titles are sent to TMDB for artwork lookup. No shared credential ships in the app.
 
-Two workers, a bounded 24-request queue, 16 MiB decoded cache, 48 MiB disk cache and
-8 MiB response limit remain. Header probes can fetch both distinct candidate files,
-but reuse the disk cache. Decode allocation is bounded; paused generations cannot bind.
-No new dependencies, permissions, background service or polling were added.
+The resolver matches exact normalized titles/types, using an explicit title year when
+provided; ambiguous remakes and unidentified episode/season rows are left unresolved.
+It selects language-neutral landscape backdrops >=1280×720 and a suitable PNG logo,
+using configuration-advertised CDN sizes. No-language metadata cannot prove image pixels
+contain no text. Asset coverage is incomplete; no “all titles” guarantee is made.
+
+Before connection, provider artwork remains available. Once connected, a missing clean
+match defaults to a neutral hero with title text. Optional provider fallback is clearly
+labelled as potentially containing badges/low-resolution art. A Top10 badge baked into
+provider pixels is not erased; a different catalogue image replaces that image.
+
+Requests wait 180 ms for focus to settle, run on one catalogue worker, cancel on hero
+changes/hidden Home, and use bounded metadata cache/TTL, timeouts and HTTP cooldowns.
+Image loading retains two workers, 24 queued requests, 16 MiB decoded cache, 48 MiB disk
+cache and 8 MiB per response. Hero decode remains at most 1920×1080; frost is 2048 pixels.
+No new dependencies, permissions, background service or continuous animation are added.
+
+See docs/elppa/CATALOGUE-ARTWORK.md and ARTWORK-RESEARCH.md for sources and setup.
 
 ## Evidence and acceptance
 

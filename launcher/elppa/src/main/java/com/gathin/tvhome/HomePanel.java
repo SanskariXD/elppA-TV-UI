@@ -105,6 +105,44 @@ final class HomePanel extends Dialog {
     return t;
   }
 
+  private void password(java.util.function.Consumer<String> change) {
+    android.widget.EditText input = new android.widget.EditText(getContext());
+    input.setHint("API Read Access Token");
+    input.setSingleLine(true);
+    input.setInputType(
+        android.text.InputType.TYPE_CLASS_TEXT
+            | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+    input.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+    input.setTextColor(ElppaUi.TEXT);
+    input.setHintTextColor(ElppaUi.MUTED);
+    ElppaUi.type(input, 14, scale);
+    input.setPadding(px(12), px(12), px(12), px(12));
+    input.setBackground(ElppaUi.shape(0xFF30363E, px(12), false));
+    input.addTextChangedListener(
+        new android.text.TextWatcher() {
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            change.accept(s.toString());
+          }
+
+          public void afterTextChanged(android.text.Editable s) {}
+        });
+    content.addView(input, new LinearLayout.LayoutParams(-1, -2));
+    if (first == null) first = input;
+  }
+
+  private void brand(int resource) {
+    android.widget.ImageView image = new android.widget.ImageView(getContext());
+    image.setImageResource(resource);
+    image.setScaleType(android.widget.ImageView.ScaleType.FIT_CENTER);
+    image.setContentDescription("The Movie Database");
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(px(120), px(48));
+    lp.bottomMargin = px(16);
+    content.addView(image, lp);
+  }
+
   private void section(String label) {
     TextView v = text(label, 12, ElppaUi.MUTED);
     v.setPadding(px(10), px(18), px(8), px(8));
@@ -226,6 +264,16 @@ final class HomePanel extends Dialog {
 
     Builder setMessage(int message) {
       return setMessage(context.getString(message));
+    }
+
+    Builder passwordInput(java.util.function.Consumer<String> change) {
+      items.add(p -> p.password(change));
+      return this;
+    }
+
+    Builder brand(int resource) {
+      items.add(p -> p.brand(resource));
+      return this;
     }
 
     Builder section(String label) {

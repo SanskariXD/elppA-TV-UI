@@ -59,9 +59,54 @@ final class ArtworkLoader {
     load(target, uri, width, height, false, false);
   }
 
+  interface HeroListener {
+    void ready(Bitmap frost);
+  }
+
+  private HeroListener heroListener;
+  private Bitmap currentFrost;
+
+  void setHeroListener(HeroListener listener) {
+    heroListener = listener;
+  }
+
+  void loadLogo(ImageView target, String uri, Runnable ready) {
+    target.setTag(uri);
+    target.setImageDrawable(null);
+    if (uri == null || uri.isEmpty()) return;
+    final int ticket = generation.get();
+    workers.execute(
+        () -> {
+          if (ticket != generation.get()) return;
+          String key = "logo:" + uri;
+          Bitmap result = memory.get(key);
+          if (result == null) result = read(uri, 800, 320);
+          if (ticket != generation.get()) return;
+          if (result != null) memory.put(key, result);
+          final Bitmap bitmap = result;
+          main.post(
+              () -> {
+                if (ticket != generation.get() || !uri.equals(target.getTag())) return;
+                if (bitmap != null) {
+                  target.setImageDrawable(drawable(bitmap));
+                  ready.run();
+                }
+              });
+        });
+  }
+
   private String displayedHeroKey;
   private volatile boolean clearPending;
   private volatile String heroQuality = "No featured image loaded";
+
+  void clearHero(ImageView target) {
+    target.setTag(null);
+    target.setImageDrawable(null);
+    displayedHeroKey = null;
+    currentFrost = null;
+    heroQuality = "No featured image loaded";
+    if (heroListener != null) heroListener.ready(null);
+  }
 
   String heroQuality() {
     return heroQuality;
@@ -71,10 +116,13 @@ final class ArtworkLoader {
     final String key = "hero-v2:" + thumbnail + "|" + poster;
     if (key.equals(displayedHeroKey) && target.getDrawable() != null) {
       target.setTag(key);
+      if (heroListener != null) heroListener.ready(currentFrost);
       return;
     }
     target.setTag(key);
     int ticket = generation.get();
+    final int canvasWidth = Math.max(960, target.getWidth()),
+        canvasHeight = Math.max(540, target.getHeight());
     workers.execute(
         () -> {
           if (ticket != generation.get()) return;
@@ -100,6 +148,7 @@ final class ArtworkLoader {
             if (bitmap != null) memory.put("hero:" + best, bitmap);
           }
           final Bitmap result = bitmap;
+          final Bitmap frost = FrostedPlayDrawable.sample(bitmap, canvasWidth, canvasHeight);
           final String quality =
               bitmap == null
                   ? "Image unavailable"
@@ -117,6 +166,8 @@ final class ArtworkLoader {
           main.post(
               () -> {
                 if (ticket != generation.get() || !key.equals(target.getTag())) return;
+                currentFrost = frost;
+                if (heroListener != null) heroListener.ready(frost);
                 heroQuality = quality;
                 displayedHeroKey = result == null ? null : key;
                 if (result == null) target.setImageDrawable(null);
@@ -349,6 +400,7 @@ final class ArtworkLoader {
   void clear() {
     pause();
     displayedHeroKey = null;
+    currentFrost = null;
     heroQuality = "Artwork cache cleared";
     trim();
     clearPending = true;

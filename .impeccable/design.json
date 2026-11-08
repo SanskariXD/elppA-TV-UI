@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-08T18:53:18.425840+00:00",
-  "title": "elppA TV \u2014 cinematic Home 0.2.0",
+  "generatedAt": "2026-11-08T19:22:04.209112+00:00",
+  "title": "elppA TV \u2014 catalogue hero and glass focus 0.3.0",
   "extensions": {
     "colorMeta": {
       "text": {
@@ -180,7 +180,7 @@
     "motion": [
       {
         "name": "card-focus",
-        "value": "1.055 scale, -2 logical unit lift, 180ms decelerate",
+        "value": "1.045 scale,-3 logical units,200ms decelerate",
         "purpose": "Remote focus; instantaneous with reduced motion."
       },
       {
@@ -209,7 +209,7 @@
       },
       "viewportScale": "min(width/960, height/540), centred canvas",
       "typeScale": "Logical canvas \u00d7 viewport scale \u00d7 min(fontScale,1.5); hero/subtitle/caption auto-fit.",
-      "focusStroke": "1 logical unit tinted edge plus bounded geometric falloff, focused cards only",
+      "focusStroke": "No crisp stroke; twelve diffuse tinted layers and static reflection, reduced transparency uses solid focus",
       "focusTarget": "D-pad remote; no runtime hover state",
       "scrims": {
         "leftToRightAndroidArgb": [
@@ -226,7 +226,7 @@
       },
       "previewMode": "Opt-in sample content; no fictional watch history is presented as real.",
       "specimenLimit": "HTML/CSS are reference-scale translations for the design panel, not app code or native verification. Browser font fallback and hover are panel-only affordances. Native screenshots and physical Sony tests remain pending.",
-      "validation": "0.2.0 native recapture and hardware acceptance pending; see docs/elppa/QA.md."
+      "validation": "Build and tests recorded in QA.md; authenticated artwork/native device acceptance pending"
     }
   },
   "components": [],
